@@ -189,97 +189,102 @@ class CodeWriter:
         match vm_command:
             # Arithmetic Commands 
             case "add":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        M=D+M''')
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                M=D+M'''
             case "sub":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        M=D-M''')
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                M=D-M
+                '''
             case "neg":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        M=-M''')
+                asm_cmd = '''\
+                @SP
+                A=M
+                M=-M
+                '''
             # Comparison Commands
             case "eq":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        @EQ.{m}
-                        D-M;JEQ
-                        M=0
-                        @CONTINUE.{n}
-                        0;JMP
-                        (EQ.{m})
-                            M=-1
-                        (CONTINUE.{n})''').format(m=self.label_cnts["eq"],
-                                           n=self.label_cnts["continue"])
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                @EQ.{m}
+                D-M;JEQ
+                M=0
+                @CONTINUE.{n}
+                0;JMP
+                (EQ.{m})
+                    M=-1
+                (CONTINUE.{n})
+                '''.format(m=self.label_cnts["eq"],
+                                    n=self.label_cnts["continue"])
                 self.label_cnts["eq"] += 1
                 self.label_cnts["continue"] += 1
             case "gt":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        @GT.{m}
-                        D-M;JGT
-                        M=0
-                        @CONTINUE.{n}
-                        0;JMP
-                        (GT.{m})
-                            M=-1
-                        (CONTINUE.{n})''').format(m=self.label_cnts["gt"],
-                                           n=self.label_cnts["continue"])
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                @GT.{m}
+                D-M;JGT
+                M=0
+                @CONTINUE.{n}
+                0;JMP
+                (GT.{m})
+                    M=-1
+                (CONTINUE.{n})
+                '''.format(m=self.label_cnts["gt"], 
+                           n=self.label_cnts["continue"])
                 self.label_cnts["gt"] += 1
                 self.label_cnts["continue"] += 1
             case "lt":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        @LT.{m}
-                        D-M;JLT
-                        M=0
-                        @CONTINUE.{n}
-                        0;JMP
-                        (LT.{m})
-                            M=-1
-                        (CONTINUE.{n})''').format(m=self.label_cnts["lt"],
-                                           n=self.label_cnts["continue"])
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                @LT.{m}
+                D-M;JLT
+                M=0
+                @CONTINUE.{n}
+                0;JMP
+                (LT.{m})
+                    M=-1
+                (CONTINUE.{n})
+                '''.format(m=self.label_cnts["lt"], 
+                           n=self.label_cnts["continue"])
                 self.label_cnts["lt"] += 1
                 self.label_cnts["continue"] += 1
             # Logical commands
             case "and":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        M=D&M''')
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                M=D&M'''
             case "or":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        D=M
-                        A=A-1
-                        M=D|M''')
+                asm_cmd = '''\
+                @SP
+                A=M
+                D=M
+                A=A-1
+                M=D|M'''
             case "not":
-                asm_cmd = dedent('''\
-                        @SP
-                        A=M
-                        M=!M''')
-        self.outfile.write(asm_cmd)
+                asm_cmd = '''\
+                @SP
+                A=M
+                M=!M'''
+        self.outfile.write(dedent(asm_cmd))
     
     def write_push_pop(self, command: Command, 
                        segment: str, 
