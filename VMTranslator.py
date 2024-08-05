@@ -144,11 +144,11 @@ class CodeWriter:
 
     def __init__(self, outfile: TextIO, comments_on: bool) -> None:
         self.outfile = outfile
-        # print comments above each sequence of asm commands
-        # that tells you the vm code command being executed
+        # Toggle print comments above each sequence of asm commands
+        # that corresponds to a particular vm code command
         self.comments_on = comments_on 
-
-        # From (Nisan & Schocken, 2021, p. 188)
+        # From (Nisan & Schocken, 2021, p. 188): Initialize stack to start at 
+        # RAM address 256
         self._sp_init = dedent('''\
                     @256
                     D=A
@@ -157,31 +157,125 @@ class CodeWriter:
         outfile.write(self._sp_init)
         self._static_register = 16
         self._temp_register = 5
+        self.label_cnts = {
+            "eq" : 1,
+            "gt" : 1,
+            "lt" : 1, 
+            "else": 1, 
+            "continue": 1
+        }
 
     def write_arithmetic(self, vm_command: str) -> None:
         """
-        Writes to the output file the assembly code that implements the
-        given arithmetic-logical `command`.
+        Writes to the output file the assembly code that implements the given 
+        arithmetic-logical `command`.
+
+        The two-argument commands work by popping the last two elements off the
+        stack, computing their result, and pushing that result to the stack.
+        The one-argument commands work in the same way, only they pop the last
+        element off only (Nisan & Schocken, 2021, p. 187).
+
+        For comparison and logical commands, the result is -1 if the operation
+        is true, and the result is 0 if the operation is false (source: 
+        testing with `VMTranslator.bat`).
         """
+        if self.comments_on:
+            self.outfile.write(f"// {vm_command}")
         asm_cmd: str
         match vm_command:
+            # Arithmetic Commands 
             case "add":
                 asm_cmd = dedent('''\
                         @SP
                         A=M
                         D=M
                         A=A-1
-                        D=D+M''')
-                self.outfile.write(asm_cmd)
+                        M=D+M''')
             case "sub":
                 asm_cmd = dedent('''\
                         @SP
                         A=M
                         D=M
                         A=A-1
-                        D=D+M''')
-                self.outfile.write(asm_cmd)
-        ...
+                        M=D-M''')
+            case "neg":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        M=-M''')
+            # Comparison Commands
+            case "eq":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        D=M
+                        A=A-1
+                        @EQ.{m}
+                        D-M;JEQ
+                        M=0
+                        @CONTINUE.{n}
+                        0;JMP
+                        (EQ.{m})
+                            M=-1
+                        (CONTINUE.{n})''').format(m=self.label_cnts["eq"],
+                                           n=self.label_cnts["continue"])
+                self.label_cnts["eq"] += 1
+                self.label_cnts["continue"] += 1
+            case "gt":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        D=M
+                        A=A-1
+                        @GT.{m}
+                        D-M;JGT
+                        M=0
+                        @CONTINUE.{n}
+                        0;JMP
+                        (GT.{m})
+                            M=-1
+                        (CONTINUE.{n})''').format(m=self.label_cnts["gt"],
+                                           n=self.label_cnts["continue"])
+                self.label_cnts["gt"] += 1
+                self.label_cnts["continue"] += 1
+            case "lt":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        D=M
+                        A=A-1
+                        @LT.{m}
+                        D-M;JLT
+                        M=0
+                        @CONTINUE.{n}
+                        0;JMP
+                        (LT.{m})
+                            M=-1
+                        (CONTINUE.{n})''').format(m=self.label_cnts["lt"],
+                                           n=self.label_cnts["continue"])
+                self.label_cnts["lt"] += 1
+                self.label_cnts["continue"] += 1
+            # Logical commands
+            case "and":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        D=M
+                        A=A-1
+                        M=D&M''')
+            case "or":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        D=M
+                        A=A-1
+                        M=D|M''')
+            case "not":
+                asm_cmd = dedent('''\
+                        @SP
+                        A=M
+                        M=!M''')
+        self.outfile.write(asm_cmd)
     
     def write_push_pop(self, command: Command, 
                        segment: str, 
@@ -190,8 +284,10 @@ class CodeWriter:
         Writes to the output file the assembly code that implements the given
         `push` or `pop` `command`.
         """
+        if self.comments_on:
+            self.outfile.write(f"// {command} {segment} {index}")
         register: str
-        if seg_symbol := constants.SEGMENTS[segment]:
+        if seg_symbol := constants.SEGMENT_SYMBOLS[segment]:
             register = seg_symbol
         else:
             match segment:
