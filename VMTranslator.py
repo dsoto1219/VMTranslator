@@ -149,12 +149,13 @@ class CodeWriter:
         self.comments_on = comments_on 
         # From (Nisan & Schocken, 2021, p. 188): Initialize stack to start at 
         # RAM address 256
-        self._sp_init = dedent('''\
+        self._SP_INIT = dedent('''\
                     @256
                     D=A
                     @SP
-                    M=D''')
-        outfile.write(self._sp_init)
+                    M=D
+                    ''')
+        self.outfile.write(self._SP_INIT)
         # For `write_arithmetic`` method. Some vm commands require labels in
         # order to work. To avoid creating multiple labels of the same name,
         # we number the labels starting from 1, and increment their numbers 
@@ -184,38 +185,33 @@ class CodeWriter:
         testing with `VMTranslator.bat`).
         """
         if self.comments_on:
-            self.outfile.write(f"// {vm_command}")
+            self.outfile.write(f"// {vm_command}\n")
+        # Start with A register one address below the top of the stack. The 
+        # value at M is the first argument.
+        self.outfile.write(dedent('''\
+                @SP
+                A=M-1
+                '''))
+        # If the command takes in two arguments, save the first argument into
+        # D register and decrement the A register so that the second argument
+        # is in the M register.
+        if vm_command not in {"neg", "not"}:
+            self.outfile.write(dedent('''\
+                    D=M
+                    A=A-1
+                    '''))
         asm_cmd: str
         match vm_command:
             # Arithmetic Commands 
             case "add":
-                asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
-                M=D+M'''
+                asm_cmd = 'M=D+M\n'
             case "sub":
-                asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
-                M=D-M
-                '''
+                asm_cmd = 'M=D-M\n'
             case "neg":
-                asm_cmd = '''\
-                @SP
-                A=M
-                M=-M
-                '''
+                asm_cmd = 'M=-M\n'
             # Comparison Commands
             case "eq":
                 asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
                 @EQ.{m}
                 D-M;JEQ
                 M=0
@@ -230,10 +226,6 @@ class CodeWriter:
                 self.label_cnts["continue"] += 1
             case "gt":
                 asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
                 @GT.{m}
                 D-M;JGT
                 M=0
@@ -248,10 +240,6 @@ class CodeWriter:
                 self.label_cnts["continue"] += 1
             case "lt":
                 asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
                 @LT.{m}
                 D-M;JLT
                 M=0
@@ -266,25 +254,19 @@ class CodeWriter:
                 self.label_cnts["continue"] += 1
             # Logical commands
             case "and":
-                asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
-                M=D&M'''
+                asm_cmd = 'M=D&M\n'
             case "or":
-                asm_cmd = '''\
-                @SP
-                A=M
-                D=M
-                A=A-1
-                M=D|M'''
+                asm_cmd = 'M=D|M\n'
             case "not":
-                asm_cmd = '''\
-                @SP
-                A=M
-                M=!M'''
+                asm_cmd = 'M=!M\n'
         self.outfile.write(dedent(asm_cmd))
+        # Increment stack pointer, and leave A register pointing to the top of
+        # the stack.
+        self.outfile.write(dedent('''\
+                D=A+1
+                @SP
+                AM=D
+                '''))
     
     def write_push_pop(self, command: Command, 
                        segment: str, 
