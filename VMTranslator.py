@@ -210,47 +210,20 @@ class CodeWriter:
             case "neg":
                 asm_cmd = 'M=-M\n'
             # Comparison Commands
-            case "eq":
-                asm_cmd = '''\
-                @EQ.{m}
-                D-M;JEQ
+            case "eq"|"gt"|"lt":
+                asm_cmd = dedent('''\
+                @{CMD}.{m}
+                D-M;J{CMD}
                 M=0
-                @CONTINUE.{n}
+                @{CMD}.{n}
                 0;JMP
                 (EQ.{m})
                     M=-1
                 (CONTINUE.{n})
-                '''.format(m=self.label_cnts["eq"],
-                                    n=self.label_cnts["continue"])
-                self.label_cnts["eq"] += 1
-                self.label_cnts["continue"] += 1
-            case "gt":
-                asm_cmd = '''\
-                @GT.{m}
-                D-M;JGT
-                M=0
-                @CONTINUE.{n}
-                0;JMP
-                (GT.{m})
-                    M=-1
-                (CONTINUE.{n})
-                '''.format(m=self.label_cnts["gt"], 
+                ''').format(CMD=vm_command.upper(), 
+                           m=self.label_cnts[vm_command], 
                            n=self.label_cnts["continue"])
-                self.label_cnts["gt"] += 1
-                self.label_cnts["continue"] += 1
-            case "lt":
-                asm_cmd = '''\
-                @LT.{m}
-                D-M;JLT
-                M=0
-                @CONTINUE.{n}
-                0;JMP
-                (LT.{m})
-                    M=-1
-                (CONTINUE.{n})
-                '''.format(m=self.label_cnts["lt"], 
-                           n=self.label_cnts["continue"])
-                self.label_cnts["lt"] += 1
+                self.label_cnts[vm_command] += 1
                 self.label_cnts["continue"] += 1
             # Logical commands
             case "and":
@@ -259,7 +232,7 @@ class CodeWriter:
                 asm_cmd = 'M=D|M\n'
             case "not":
                 asm_cmd = 'M=!M\n'
-        self.outfile.write(dedent(asm_cmd))
+        self.outfile.write(asm_cmd)
         # Increment stack pointer, and leave A register pointing to the top of
         # the stack.
         self.outfile.write(dedent('''\
