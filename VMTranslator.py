@@ -233,12 +233,11 @@ class CodeWriter:
             case "not":
                 asm_cmd = 'M=!M\n'
         self.outfile.write(asm_cmd)
-        # Increment stack pointer, and leave A register pointing to the top of
-        # the stack.
+        # Increment stack pointer.
         self.outfile.write(dedent('''\
                 D=A+1
                 @SP
-                AM=D
+                M=D
                 '''))
     
     def write_push_pop(self, command: Command, 
@@ -283,11 +282,11 @@ class CodeWriter:
                         M=D
                         @{seg}
                         M=M+1
-                        ''').format(seg = register,
-                                    i = index))
+                        ''').format(seg=register,
+                                    i=index))
             case Command.POP:
                 self.outfile.write(dedent('''\
-                        @{i}
+                        @SP
                         D=A
                         @{seg}
                         A=M
