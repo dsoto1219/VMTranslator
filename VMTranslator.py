@@ -144,8 +144,8 @@ class CodeWriter:
 
     def __init__(self, outfile: TextIO, comments_on: bool) -> None:
         self.outfile = outfile
-        # Toggle print comments above each sequence of asm commands
-        # that corresponds to a particular vm code command
+        # If true, prints a comment above each sequence of asm commands
+        # that tells you which vm code command it is executing.
         self.comments_on = comments_on 
         # From (Nisan & Schocken, 2021, p. 188): Initialize stack to start at 
         # RAM address 256
@@ -155,15 +155,19 @@ class CodeWriter:
                     @SP
                     M=D''')
         outfile.write(self._sp_init)
-        self._static_register = 16
-        self._temp_register = 5
+        # For `write_arithmetic`` method. Some vm commands require labels in
+        # order to work. To avoid creating multiple labels of the same name,
+        # we number the labels starting from 1, and increment their numbers 
+        # after printing them.
         self.label_cnts = {
             "eq" : 1,
             "gt" : 1,
             "lt" : 1, 
-            "else": 1, 
             "continue": 1
         }
+        # For `write_push_pop` method.
+        self._static_register = 16
+        self._temp_register = 5
 
     def write_arithmetic(self, vm_command: str) -> None:
         """
@@ -286,9 +290,16 @@ class CodeWriter:
         """
         if self.comments_on:
             self.outfile.write(f"// {command} {segment} {index}")
+
+        # Some of the segments are "static", meaning they point to a specific,
+        # unchanging RAM address, while others are "dynamic", meaning the 
+        # addresses that they point to change over time.
         register: str
+        # "Static" segments have their symbols stored in `SEGMENT_SYMBOLS`
         if seg_symbol := constants.SEGMENT_SYMBOLS[segment]:
             register = seg_symbol
+        # "Dynamic" segments have no symbol stored, and have to be handled
+        # as follows
         else:
             match segment:
                 case "static":
