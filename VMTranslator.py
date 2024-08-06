@@ -245,56 +245,47 @@ class CodeWriter:
                        index: int) -> None:
         """
         Writes to the output file the assembly code that implements the given
-        `push` or `pop` `command`.
+        `push` or `pop` `command`. See (Nisan & Schocken, 2021, p. 191-192)
+        for implementation details.
         """
         if not self.comments_off:
             self.outfile.write(f"// {command} {segment} {index}")
 
-        # Some of the segments are "static", meaning they point to a specific,
-        # unchanging RAM address, while others are "dynamic", meaning the 
-        # addresses that they point to change over time.
-        register: str
-        # "Static" segments have their symbols stored in `SEGMENT_SYMBOLS`
-        if seg_symbol := constants.SEGMENT_SYMBOLS[segment]:
-            register = seg_symbol
-        # "Dynamic" segments have no symbol stored, and have to be handled
-        # as follows
-        else:
-            match segment:
-                case "static":
-                    register = f"R{self._static_register}"
-                    self._static_register += 1
-                case "temp":
-                    register = f"R{self._temp_register}"
-                    self._temp_register += 1
-                case "pointer":
-                    if index in {0, 1}:
-                        register = f"R{3 + index}"
-                    else:
-                        raise ValueError("pointer can only be 0 or 1")
-        match command:
-            case Command.PUSH:
-                self.outfile.write(dedent('''\
-                        @{i}
-                        D=A
-                        @{seg}
-                        A=M
-                        M=D
-                        @{seg}
-                        M=M+1
-                        ''').format(seg=register,
-                                    i=index))
-            case Command.POP:
-                self.outfile.write(dedent('''\
-                        @SP
-                        D=A
-                        @{seg}
-                        A=M
-                        M=D
-                        @{seg}
-                        M=M+1
-                        ''').format(seg = register,
-                                    i = index))
+        match segment:
+            case "local"|"argument"|"this"|"that":
+                if command == Command.PUSH:
+                    asm_cmd = dedent('''\
+                    @{SYM}
+                    D=M
+                    @{IND}
+                    D=D+A
+                    @SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
+                    ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
+                                IND=index)
+                # Credit to https://evoniuk.github.io/posts/nand.html for this
+                # implementation, which makes use of clever "register-algebra"
+                # to implement this without temp variables.
+                if command == Command.POP:
+                    asm_cmd = dedent('''\
+                    @SP
+                    AM=M-1
+                    D=M
+                    @{SYM}
+                    D=D+M
+                    @{IND}
+                    D=D+A
+                    @SP
+                    A=M
+                    A=M
+                    A=D-A
+                    M=D-A
+                    ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
+                                IND=index)
+        self.outfile.write(asm_cmd)
 
 
 def main():
