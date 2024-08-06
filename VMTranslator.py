@@ -142,11 +142,11 @@ class CodeWriter:
     HACK assmebly.
     """
 
-    def __init__(self, outfile: TextIO, comments_on: bool) -> None:
+    def __init__(self, outfile: TextIO, comments_off: bool) -> None:
         self.outfile = outfile
         # If true, prints a comment above each sequence of asm commands
         # that tells you which vm code command it is executing.
-        self.comments_on = comments_on 
+        self.comments_off = comments_off 
         # From (Nisan & Schocken, 2021, p. 188): Initialize stack to start at 
         # RAM address 256
         self._SP_INIT = dedent('''\
@@ -184,7 +184,7 @@ class CodeWriter:
         is true, and the result is 0 if the operation is false (source: 
         testing with `VMTranslator.bat`).
         """
-        if self.comments_on:
+        if not self.comments_off:
             self.outfile.write(f"// {vm_command}\n")
         # Start with A register one address below the top of the stack. The 
         # value at M is the first argument.
@@ -247,7 +247,7 @@ class CodeWriter:
         Writes to the output file the assembly code that implements the given
         `push` or `pop` `command`.
         """
-        if self.comments_on:
+        if not self.comments_off:
             self.outfile.write(f"// {command} {segment} {index}")
 
         # Some of the segments are "static", meaning they point to a specific,
@@ -303,7 +303,7 @@ def main():
         description="Translates .vm files into HACK Assembly files (ending in .asm)",
     )
     argparser.add_argument('infile')
-    argparser.add_argument('-c', '--comments-on', action='store_true')
+    argparser.add_argument('-nc', '--no-comments', action='store_false')
     args = argparser.parse_args()
 
     filename, ext = os.path.splitext(args.infile)
@@ -312,7 +312,7 @@ def main():
 
     with open(args.file) as in_f, open(f"{filename}.asm") as out_f:
         parser = Parser(in_f)
-        writer = CodeWriter(out_f, args.c)
+        writer = CodeWriter(out_f, args.nc)
         while parser.has_more_lines():
             match parser.command_type:
                 case Command.ARITHMETIC:
