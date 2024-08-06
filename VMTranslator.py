@@ -187,18 +187,19 @@ class CodeWriter:
         if not self.comments_off:
             self.outfile.write(f"// {vm_command}\n")
         # Start with A register one address below the top of the stack. The 
-        # value at M is the first argument.
+        # value at M is the first argument. We also decrement the stack 
+        # pointer.
         self.outfile.write(dedent('''\
                 @SP
-                A=M-1
+                AM=M-1
                 '''))
         # If the command takes in two arguments, save the first argument into
         # D register and decrement the A register so that the second argument
-        # is in the M register.
+        # is in the M register. We also, again, decrement the stack pointer.
         if vm_command not in {"neg", "not"}:
             self.outfile.write(dedent('''\
                     D=M
-                    A=A-1
+                    AM=A-1
                     '''))
         asm_cmd: str
         match vm_command:
@@ -235,9 +236,8 @@ class CodeWriter:
         self.outfile.write(asm_cmd)
         # Increment stack pointer.
         self.outfile.write(dedent('''\
-                D=A+1
                 @SP
-                M=D
+                M=M+1
                 '''))
     
     def write_push_pop(self, command: Command, 
