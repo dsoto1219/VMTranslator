@@ -263,15 +263,15 @@ class CodeWriter:
                 if command_type == Command.PUSH:
                     # Push item at segment index to the stack. 
                     asm_cmd = dedent('''\
-                    @{SYM}
-                    D=M
-                    @{IND}
-                    D=D+A
-                    @SP
-                    A=M
-                    M=D
-                    @SP
-                    M=M+1
+                        @{SYM}
+                        D=M
+                        @{IND}
+                        D=D+A
+                        @SP
+                        A=M
+                        M=D
+                        @SP
+                        M=M+1
                     ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
                                 IND=index)
                 elif command_type == Command.POP:
@@ -280,18 +280,18 @@ class CodeWriter:
                     # "register-algebra" to implement this without temp 
                     # variables.
                     asm_cmd = dedent('''\
-                    @SP
-                    AM=M-1
-                    D=M
-                    @{SYM}
-                    D=D+M
-                    @{IND}
-                    D=D+A
-                    @SP
-                    A=M
-                    A=M
-                    A=D-A
-                    M=D-A
+                        @SP
+                        AM=M-1
+                        D=M
+                        @{SYM}
+                        D=D+M
+                        @{IND}
+                        D=D+A
+                        @SP
+                        A=M
+                        A=M
+                        A=D-A
+                        M=D-A
                     ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
                                 IND=index)
             case "pointer":
@@ -310,12 +310,12 @@ class CodeWriter:
                     # Push value at THIS or THAT to the stack.
                     asm_cmd = dedent('''\
                     @{SYM}
-                    D=M
-                    @SP
-                    A=M
-                    M=D
-                    @SP
-                    M=M+1
+                        D=M
+                        @SP
+                        A=M
+                        M=D
+                        @SP
+                        M=M+1
                     ''').format(SYM=sym)
                 elif command_type == Command.POP:
                     # Pop top of the stack to THIS or THAT pointer.
