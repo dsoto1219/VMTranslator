@@ -278,7 +278,8 @@ class CodeWriter:
                     # Credit to https://evoniuk.github.io/posts/nand.html for 
                     # this implementation, which makes use of clever 
                     # "register-algebra" to implement this without temp 
-                    # variables.
+                    # variables. I made a few changes to reduce the count, but
+                    # it should work exactly the same.
                     asm_cmd = dedent('''\
                         @SP
                         AM=M-1
@@ -289,8 +290,7 @@ class CodeWriter:
                         D=D+A
                         @SP
                         A=M
-                        A=M
-                        A=D-A
+                        A=D-M
                         M=D-A
                     ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
                                 IND=index)
