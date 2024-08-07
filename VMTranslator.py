@@ -144,11 +144,11 @@ class CodeWriter:
 
     def __init__(self, outfile: TextIO, comments_off: bool) -> None:
         self.outfile = outfile
-        # If true, prints a comment above each sequence of asm commands
+        # If True, prints a comment above each sequence of asm commands
         # that tells you which vm code command it is executing.
         self.comments_off = comments_off 
-        # From (Nisan & Schocken, 2021, p. 188): Initialize stack to start at 
-        # RAM address 256
+        # Initialize stack to start at RAM address 256 
+        # (Nisan & Schocken, 2021, p. 188):
         self._SP_INIT = dedent('''\
                     @256
                     D=A
@@ -156,19 +156,16 @@ class CodeWriter:
                     M=D
                     ''')
         self.outfile.write(self._SP_INIT)
-        # For `write_arithmetic`` method. Some vm commands require labels in
-        # order to work. To avoid creating multiple labels of the same name,
-        # we number the labels starting from 1, and increment their numbers 
-        # after printing them.
+        # This dictionary is for the `write_arithmetic`` method. Its comparison
+        # commands require labels in order to work---to avoid creating multiple
+        # labels of the same name, we number the labels starting from 1, and
+        # increment their numbers after printing them.
         self.label_cnts = {
             "eq" : 1,
             "gt" : 1,
             "lt" : 1, 
             "continue": 1
         }
-        # For `write_push_pop` method.
-        self._static_register = 16
-        self._temp_register = 5
 
     def write_arithmetic(self, vm_command: str) -> None:
         """
@@ -361,7 +358,27 @@ class CodeWriter:
                         A=D-M
                         M=D-A
                     ''').format(IND=index)
-
+            case "constant":
+                if command_type == Command.PUSH:
+                    # Push constant value to the stack.
+                    asm_cmd = dedent('''\
+                        @{CONST}
+                        D=A
+                        @SP
+                        A=M
+                        M=D
+                        @SP
+                        M=M+1
+                    ''').format(CONST=index)
+                elif command_type == Command.POP:
+                    # Command isn't allowed. Source:
+                    # http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/I-m-confused-in-push-pop-constent-x-td4028972.html # noqa
+                    raise ValueError("Undefined behavior: cannot pop constant off of stack.")
+            case "static":
+                if index < 16 or index > 255:
+                    raise ValueError(f"Index {index} invalid, must be an
+                                       integer between 16 and 255, inclusive.")
+                ...
         self.outfile.write(asm_cmd)
 
 
