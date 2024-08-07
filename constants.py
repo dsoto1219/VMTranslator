@@ -77,8 +77,8 @@ SEGMENT_SYMBOLS: dict[str, str] = {
     "constant" : "SP",
     "this" : "THIS",
     "that" : "THAT",
-    "pointer" : "", # RAM[3-4]
-    "temp" : "", # RAM[5-12]
+    "pointer" : "", # RAM[THIS], RAM[THAT]
+    "temp" : "R5",
 }
 
 
