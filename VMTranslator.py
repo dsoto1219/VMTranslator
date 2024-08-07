@@ -248,12 +248,20 @@ class CodeWriter:
         `push` or `pop` `command`. See (Nisan & Schocken, 2021, p. 191-192)
         for implementation details.
         """
+        if command not in {Command.PUSH, Command.POP}:
+            raise ValueError(f"Command type {command} invalid, must be 
+                               Command.PUSH or Command.POP")
+        if index < 0:
+            raise ValueError(f"Index {index} invalid, must be non-negative.")
+
         if not self.comments_off:
             self.outfile.write(f"// {command} {segment} {index}")
 
+        asm_cmd: str
         match segment:
             case "local"|"argument"|"this"|"that":
                 if command == Command.PUSH:
+                    # Push item at segment index to the stack. 
                     asm_cmd = dedent('''\
                     @{SYM}
                     D=M
@@ -266,10 +274,11 @@ class CodeWriter:
                     M=M+1
                     ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
                                 IND=index)
-                # Credit to https://evoniuk.github.io/posts/nand.html for this
-                # implementation, which makes use of clever "register-algebra"
-                # to implement this without temp variables.
-                if command == Command.POP:
+                elif command == Command.POP:
+                    # Credit to https://evoniuk.github.io/posts/nand.html for 
+                    # this implementation, which makes use of clever 
+                    # "register-algebra" to implement this without temp 
+                    # variables.
                     asm_cmd = dedent('''\
                     @SP
                     AM=M-1
