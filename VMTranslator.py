@@ -240,7 +240,7 @@ class CodeWriter:
                 M=M+1
                 '''))
     
-    def write_push_pop(self, command: Command, 
+    def write_push_pop(self, command_type: Command, 
                        segment: str, 
                        index: int) -> None:
         """
@@ -248,19 +248,19 @@ class CodeWriter:
         `push` or `pop` `command`. See (Nisan & Schocken, 2021, p. 191-192)
         for implementation details.
         """
-        if command not in {Command.PUSH, Command.POP}:
-            raise ValueError(f"Command type {command} invalid, must be 
+        if command_type not in {Command.PUSH, Command.POP}:
+            raise ValueError(f"Command type {command_type} invalid, must be 
                                Command.PUSH or Command.POP")
         if index < 0:
             raise ValueError(f"Index {index} invalid, must be non-negative.")
 
         if not self.comments_off:
-            self.outfile.write(f"// {command} {segment} {index}")
+            self.outfile.write(f"// {command_type} {segment} {index}")
 
         asm_cmd: str
         match segment:
             case "local"|"argument"|"this"|"that":
-                if command == Command.PUSH:
+                if command_type == Command.PUSH:
                     # Push item at segment index to the stack. 
                     asm_cmd = dedent('''\
                     @{SYM}
@@ -274,7 +274,7 @@ class CodeWriter:
                     M=M+1
                     ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
                                 IND=index)
-                elif command == Command.POP:
+                elif command_type == Command.POP:
                     # Credit to https://evoniuk.github.io/posts/nand.html for 
                     # this implementation, which makes use of clever 
                     # "register-algebra" to implement this without temp 
@@ -306,7 +306,7 @@ class CodeWriter:
                     raise ValueError(f"Index {index} invalid, can only be 0 or
                                       1.")
 
-                if command == Command.PUSH:
+                if command_type == Command.PUSH:
                     # Push value at THIS or THAT to the stack.
                     asm_cmd = dedent('''\
                     @{SYM}
@@ -317,7 +317,7 @@ class CodeWriter:
                     @SP
                     M=M+1
                     ''').format(SYM=sym)
-                elif command == Command.POP:
+                elif command_type == Command.POP:
                     # Pop top of the stack to THIS or THAT pointer.
                     asm_cmd = dedent('''\
                         @SP
@@ -331,7 +331,7 @@ class CodeWriter:
                     raise ValueError(f"Index {index} invalid, must be between
                                        0 and 7, inclusive.")
 
-                if command == Command.PUSH:
+                if command_type == Command.PUSH:
                     # Push value at RAM[5 + i] to the stack.
                     asm_cmd = dedent('''\
                         @R5
@@ -345,7 +345,7 @@ class CodeWriter:
                         @SP
                         M=M+1
                     ''').format(IND=index)
-                elif command == Command.POP:
+                elif command_type == Command.POP:
                     # Pop top of the stack to RAM[5 + index]. Uses the same
                     # trick as the Pop command in the first case.
                     asm_cmd = ('''\
