@@ -285,6 +285,74 @@ class CodeWriter:
                     M=D-A
                     ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
                                 IND=index)
+            case "pointer":
+                sym: str
+                if index == 0:
+                    # "pointer 0" correponds to "THIS" register pointer
+                    sym = "THIS"
+                elif index == 1:
+                    # "pointer 1" correponds to "THAT" register pointer
+                    sym = "THAT"
+                else:
+                    raise ValueError(f"Index {index} invalid, can only be 0 or
+                                      1.")
+
+                if command == Command.PUSH:
+                    # Push value at THIS or THAT to the stack.
+                    asm_cmd = dedent('''\
+                    @{SYM}
+                    D=M
+                    @SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
+                    ''').format(SYM=sym)
+                elif command == Command.POP:
+                    # Pop top of the stack to THIS or THAT pointer.
+                    asm_cmd = dedent('''\
+                        @SP
+                        AM=M-1
+                        D=M
+                        @{SYM}
+                        M=D
+                    ''').format(SYM=sym)
+            case "temp":
+                if index > 7:
+                    raise ValueError(f"Index {index} invalid, must be between
+                                       0 and 7, inclusive.")
+
+                if command == Command.PUSH:
+                    # Push value at RAM[5 + i] to the stack.
+                    asm_cmd = dedent('''\
+                        @R5
+                        D=A
+                        @{IND}
+                        A=D+A
+                        D=M
+                        @SP
+                        A=M
+                        M=D
+                        @SP
+                        M=M+1
+                    ''').format(IND=index)
+                elif command == Command.POP:
+                    # Pop top of the stack to RAM[5 + index]. Uses the same
+                    # trick as the Pop command in the first case.
+                    asm_cmd = ('''\
+                        @SP
+                        AM=M-1
+                        D=M
+                        @R5
+                        D=D+A
+                        @{IND}
+                        D=D+A
+                        @SP
+                        A=M
+                        A=D-M
+                        M=D-A
+                    ''').format(IND=index)
+
         self.outfile.write(asm_cmd)
 
 
