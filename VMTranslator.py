@@ -385,6 +385,12 @@ def main():
             match parser.command_type:
                 case Command.ARITHMETIC:
                     writer.write_arithmetic(parser.arg(1))
+                case Command.PUSH|Command.POP:
+                    writer.write_push_pop(
+                        parser.command_type,
+                        parser.arg(1),
+                        parser.arg(2)
+                    )
             parser.advance()
 
 
