@@ -7,6 +7,23 @@ from textwrap import dedent
 from typing import TextIO
 
 
+class ParserError(Exception):
+    """
+    Custom exception that takes in an optional line number and filename, and
+    prints this information alongside an error message if provided.
+    """
+    def __init__(self, message: str="", 
+                 line: int|None=None,
+                 filename: str="") -> None:
+        if message and line and filename:
+            message = f"Line {line} in {filename}: {message}"
+        elif line:
+            message = f"Line {line}{': ' if message else ''}{message}" 
+        elif filename:
+            message = f"In {filename}{': ' if message else ''}{message}"
+        super().__init__(message)
+
+
 class Parser:
     """
     Object for parsing file with vm code. See (Nisan & Schocken, 2021, p. 196)
@@ -131,8 +148,9 @@ class Parser:
             }:
                 return int(self._parsed_line[index])
             case _:
-                raise ValueError(f"Invalid argument index ({index}), for "
-                                 f"command type {self.command_type}")
+                raise ParserError(f"Invalid argument index ({index}), for "
+                                  f"command type {self.command_type}", 
+                                  line=self.current_line_index)
 
 
 class CodeWriter:
