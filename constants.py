@@ -14,8 +14,8 @@ class Command(Enum):
     CALL = 8
 
 
+"""Set of all commands in the VM language."""
 COMMANDS = {
-    """Set of all commands in the VM language."""
     # Arithmetic/Logical Commands
     'add',
     'sub',
@@ -40,8 +40,8 @@ COMMANDS = {
 }
 
 
+"""COMMANDS commands organized as a dictionary."""
 TYPE_COMMANDS: dict[str, list[str]] = {
-    """COMMANDS commands organized as a dictionary."""
     # Arithmetic/Logical Commands
     "arithmetic" : [
         'add',
@@ -63,14 +63,14 @@ TYPE_COMMANDS: dict[str, list[str]] = {
 }
 
 
+"""
+Conversion of segment symbols as they would appear in VM code to how they
+would appear in HACK assembly. 
+- If base address is contained within a symbol, a symbol is listed.
+- If the symbol refers to a range of addresses, an empty string is provided
+that denotes this.
+"""
 SEGMENT_SYMBOLS: dict[str, str] = {
-    """
-    Conversion of segment symbols as they would appear in VM code to how they
-    would appear in HACK assembly. 
-    - If base address is contained within a symbol, a symbol is listed.
-    - If the symbol refers to a range of addresses, an empty string is provided
-    that denotes this.
-    """
     "argument" : "ARG",
     "local" : "LCL",
     "static" : "", # RAM[16-255]
@@ -82,8 +82,8 @@ SEGMENT_SYMBOLS: dict[str, str] = {
 }
 
 
+"""Strings for regex checks."""
 REGEXES: dict = {
-    """Strings for regex checks."""
     'command' : { 
         'arithmetic': 'add|sub|neg|eq|gt|lt|and|or|not',
         'memory_access': 'push|pop',
