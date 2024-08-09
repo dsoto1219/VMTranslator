@@ -7,35 +7,24 @@ from textwrap import dedent
 from typing import TextIO
 
 
-class ParserError(Exception):
-    """
-    Custom exception that takes in an optional line number and filename, and
-    prints this information alongside an error message if provided.
-    """
-    def __init__(self, message: str="", 
-                 line: int|None=None,
-                 filename: str="") -> None:
-        if message and line and filename:
-            message = f"Line {line} in {filename}: {message}"
-        elif line:
-            message = f"Line {line}{': ' if message else ''}{message}" 
-        elif filename:
-            message = f"In {filename}{': ' if message else ''}{message}"
-        super().__init__(message)
-
-
 class Parser:
     """
     Object for parsing file with vm code. See (Nisan & Schocken, 2021, p. 196)
     for motivation.
     """
     def __init__(self, input_file: TextIO) -> None:
+        # Filename stored in case of an error, see ParserError
+        self.filename = input_file.name
+
         self.lines: list[str] = input_file.readlines()
         self.current_line_index: int = 0
         self.current_line: str = self.lines[self.current_line_index]
+
+        # TODO: fix types of arguments
         self.command_type: str = ""
         # self.arg1: str = ""
         # self.arg2: str = ""
+
         self._parse_line()
 
     def _parse_line(self) -> None:
@@ -62,8 +51,7 @@ class Parser:
         elif re.match(r"\s*(//.*)?", self.current_line):
             self._parsed_line = (None, None, None)
         else:
-            raise AttributeError(f"Line {self.current_line_index + 1} "
-                                 f"({self.current_line}) could not be parsed.")
+            raise ParserError(self)
         # Always run: even if the current line is whitespace/comment, this will
         # return None.
         self._get_command_type()
@@ -148,9 +136,23 @@ class Parser:
             }:
                 return int(self._parsed_line[index])
             case _:
-                raise ParserError(f"Invalid argument index ({index}), for "
-                                  f"command type {self.command_type}", 
-                                  line=self.current_line_index)
+                raise ParserError(self, 
+                                  f"Invalid index ({index}) as argument for "
+                                  f"command type {self.command_type}.")
+
+
+class ParserError(Exception):
+    """
+    Custom exception that takes in an optional line number and filename, and
+    prints this information alongside an error message if provided.
+    """
+    def __init__(self, parser: Parser, message: str="") -> None:
+        info: str = (f"In {os.path.basename(parser.filename)}, "
+                     f"line {parser.current_line_index + 1} "
+                     f"({parser.current_line.rstrip()})")
+        if message:
+            info = info + f": {message}"
+        super().__init__(info)
 
 
 class CodeWriter:
@@ -181,7 +183,7 @@ class CodeWriter:
         self.label_cnts = {
             "eq" : 1,
             "gt" : 1,
-            "lt" : 1, 
+            "lt" : 1,
             "continue": 1
         }
 
@@ -264,8 +266,8 @@ class CodeWriter:
         for implementation details.
         """
         if command_type not in {Command.PUSH, Command.POP}:
-            raise ValueError(f"Command type {command_type} invalid, must be 
-                               Command.PUSH or Command.POP")
+            raise ValueError(f"Command type {command_type} invalid, must be "
+                              "Command.PUSH or Command.POP")
         if index < 0:
             raise ValueError(f"Index {index} invalid, must be non-negative.")
 
@@ -318,8 +320,8 @@ class CodeWriter:
                     # "pointer 1" correponds to "THAT" register pointer
                     sym = "THAT"
                 else:
-                    raise ValueError(f"Index {index} invalid, can only be 0 or
-                                      1.")
+                    raise ValueError(f"Index {index} invalid, "
+                                      "can only be 0 or 1.")
 
                 if command_type == Command.PUSH:
                     # Push value at THIS or THAT to the stack.
@@ -343,8 +345,8 @@ class CodeWriter:
                     ''').format(SYM=sym)
             case "temp":
                 if index > 7:
-                    raise ValueError(f"Index {index} invalid, must be between
-                                       0 and 7, inclusive.")
+                    raise ValueError(f"Index {index} invalid, must be between "
+                                      "0 and 7, inclusive.")
 
                 if command_type == Command.PUSH:
                     # Push value at RAM[5 + i] to the stack.
@@ -394,8 +396,8 @@ class CodeWriter:
                     raise ValueError("Undefined behavior: cannot pop constant off of stack.")
             case "static":
                 if index < 16 or index > 255:
-                    raise ValueError(f"Index {index} invalid, must be an
-                                       integer between 16 and 255, inclusive.")
+                    raise ValueError(f"Index {index} invalid, must be an "
+                                      "integer between 16 and 255, inclusive.")
                 ...
         self.outfile.write(asm_cmd)
 
