@@ -20,10 +20,9 @@ class Parser:
         self.current_line_index: int = 0
         self.current_line: str = self.lines[self.current_line_index]
 
-        # TODO: fix types of arguments
-        self.command_type: str = ""
-        # self.arg1: str = ""
-        # self.arg2: str = ""
+        self.command_type: Command = None
+        # self.arg1: str = None
+        # self.arg2: int = None
 
         self._parse_line()
 
