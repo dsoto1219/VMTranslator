@@ -101,9 +101,15 @@ class Parser:
                     self.command_type = Command.POP
                 case _: # Incorrect parse
                     raise ParserError(self, f"Regex incorrectly matched "
-                                      f"{mgd['cmd']} as a push/pop command.")
+                                      f"{mgd['cmd']} as a push/pop command "
+                                       "(Error in Parser implementation).")
             self.arg1 = mgd['segment']
-            self.arg2 = int(mgd['index'])
+            try:
+                self.arg2 = int(mgd['index'])
+            except ValueError:
+                raise ParserError(self, "Regex incorrectly matched index "
+                                        "that is not a number (Error in "
+                                        "Parser implementation.")
         # Last case: All whitespace or comment
         elif matches := re.fullmatch(
                 pattern=r"^\s*(?://.*)?$", 
