@@ -4,7 +4,7 @@ from constants import Command, REGEXES
 import os.path
 import re
 from textwrap import dedent
-from typing import TextIO
+from typing import Optional, TextIO
 
 
 class Parser:
@@ -20,11 +20,43 @@ class Parser:
         self.current_line_index: int = 0
         self.current_line: str = self.lines[self.current_line_index]
 
-        self.command_type: Command = None
-        # self.arg1: str = None
-        # self.arg2: int = None
+        # Instead of using the suggested subroutines for these, 
+        # we use class variables.
+        self.command_type: Optional[Command] = None
+        self._arg1: str
+        self._arg2: int
 
         self._parse_line()
+    
+    @property
+    def arg1(self) -> Optional[str]:
+        return self._arg1
+    
+    @arg1.setter
+    def arg1(self, value: str) -> None:
+        if self.command_type == Command.RETURN:
+            raise ValueError("arg1 should not be assigned if command type "
+                              "is RETURN")
+        self._arg1 = value
+
+    @property
+    def arg2(self) -> Optional[int]:
+        """Returns the second argument of the current command."""
+        return self._arg2
+    
+    @arg2.setter
+    def arg2(self, value: int) -> None:
+        if self.command_type not in {
+                Command.PUSH,
+                Command.POP,
+                Command.FUNCTION,
+                Command.CALL,
+            }:
+            raise ParserError(self, 
+                              "arg2 should only be assigned if command type "
+                              "is PUSH, POP, FUNCTION, or CALL, not "
+                             f"{self.command_type}")
+        self._arg2 = value
 
     def _parse_line(self) -> None:
         """
@@ -36,24 +68,52 @@ class Parser:
         this form or if it is a comment or whitespace. If line is not valid, 
         the method raises an AttributeError.
         """
-        # regex = re.compile(r'''
-        #     (?:\s*({arithmetic})\s*)|
-        #     (?:\s*({memory_access})\s+({segments})\s+(\d+)\s*)
-        # '''.format(arithmetic=REGEXES['command']['arithmetic'], 
-        #         memory_access=REGEXES['command']['memory_access'],
-        #         segments=REGEXES['segment']),
-        #         re.X)
-        if matches := re.match(r"(\w+) ?(\w+)? ?(\d+)?(?:://.*)?", 
-                               self.current_line):
-            self._parsed_line = tuple(matches.groups())
-        # Case for whitespace or comment
-        elif re.match(r"\s*(//.*)?", self.current_line):
-            self._parsed_line = (None, None, None)
-        else:
-            raise ParserError(self)
-        # Always run: even if the current line is whitespace/comment, this will
-        # return None.
-        self._get_command_type()
+        self.current_line = self.current_line.rstrip()
+        # Case 1: Arithmetic command (add, sub, eq, ...)
+        if matches := re.fullmatch(
+                pattern=r'''
+                ^\s*                       # Optional whitespace
+                (?P<cmd>{arithmetic_cmds}) # Valid arithmetic commands
+                \s*(?://.*)?$            # Optional whitespace+comment
+                '''.format(arithmetic_cmds=REGEXES['command']['arithmetic']),
+                string=self.current_line,
+                flags=re.X):
+            self.command_type = Command.ARITHMETIC
+            self.arg1 = matches.groupdict()['cmd']
+        # Case 2: Memory access command (push, pop)
+        elif matches := re.fullmatch(
+                pattern=r'''
+                ^\s*                             # Optional whitespace
+                (?P<cmd>{memory_access_cmds})\s+ # Valid memory access command
+                (?P<segment>{valid_segments})\s+ # Valid virtual memory segment
+                (?P<index>\d+)                   # Any non-negative integer
+                \s*(?://.*)?$                  # Optional whitespace+comment
+                '''.format(
+                    memory_access_cmds=REGEXES['command']['memory_access'],
+                    valid_segments=REGEXES['segment']),
+                string=self.current_line,
+                flags=re.X):
+            mgd = matches.groupdict()
+            match mgd['cmd']:
+                case "push":
+                    self.command_type = Command.PUSH
+                case "pop":
+                    self.command_type = Command.POP
+                case _: # Incorrect parse
+                    raise ParserError(self, f"Regex incorrectly matched "
+                                      f"{mgd['cmd']} as a push/pop command.")
+            self.arg1 = mgd['segment']
+            self.arg2 = int(mgd['index'])
+        # Last case: All whitespace or comment
+        elif matches := re.fullmatch(
+                pattern=r"^\s*(?://.*)?$", 
+                string=self.current_line):
+            self.command_type = None
+            # Not part of specification: if whitespace, arg1 will return
+            # full contents of current line
+            self.arg1 = self.current_line
+        else: # Unknown error
+            raise ParserError(self, "Unforseen error.")
 
     def has_more_lines(self) -> bool:
         """
@@ -76,68 +136,6 @@ class Parser:
         self.current_line_index += 1
         self.current_line = self.lines[self.current_line_index]
         self._parse_line()
-    
-    def _get_command_type(self) -> Command | None:
-        """
-        Reads the first entry of the parsed line (does not check if it exists)
-        and returns its corresponding Command enum.
-        """
-        match self._parsed_line[0]:
-            case "add"|"sub"|"neg"|"eq"|"gt"|"lt"|"and"|"or"|"not":
-                self.command_type = Command.ARITHMETIC
-            case "push":
-                self.command_type = Command.PUSH
-            case "pop":
-                self.command_type = Command.POP
-            case "label":
-                self.command_type = Command.LABEL
-            case "goto":
-                self.command_type = Command.GOTO
-            case "if-goto":
-                self.command_type = Command.IF
-            case "function":
-                self.command_type = Command.FUNCTION
-            case "return":
-                self.command_type = Command.RETURN
-            case "call":
-                self.command_type = Command.CALL
-            case _:
-                self.command_type = None
-    
-    def arg(self, index: int) -> str:
-        """
-        Returns the (index)th argument of the current command, i.e. arg(1) to
-        return 1st argument and arg(2) to return 2nd argument. 
-        Notes:
-        - If the current command is arithmetic, `arg(1)` returns the command
-          (i.e. if the command is `"add"`, `arg(1)` returns `"add"`).
-        - If the current command is a PUSH or POP command, checks whether the
-          argument is within the set of valid segments (see `constants.py`).
-        - `arg(1)` does not work for RETURN type.
-        - `arg(2)` works only for Command enums PUSH, POP, FUNCTION, and CALL.
-        """
-        match index:
-            case 1 if self.command_type != Command.RETURN:
-                if self.command_type == Command.ARITHMETIC:
-                    return self._parsed_line[0]
-                if self.command_type in {Command.PUSH, Command.POP} and \
-                (segment := self._parsed_line[index]) \
-                not in constants.SEGMENT_SYMBOLS:
-                    raise ValueError(f"Invalid segment {segment} for "
-                                     f"{self.command_type} command.")
-                return self._parsed_line[index]
-            # The only commands with a second argument are the following
-            case 2 if self.command_type in {
-                Command.PUSH,
-                Command.POP,
-                Command.FUNCTION,
-                Command.CALL,
-            }:
-                return int(self._parsed_line[index])
-            case _:
-                raise ParserError(self, 
-                                  f"Invalid index ({index}) as argument for "
-                                  f"command type {self.command_type}.")
 
 
 class ParserError(Exception):
@@ -148,7 +146,7 @@ class ParserError(Exception):
     def __init__(self, parser: Parser, message: str="") -> None:
         info: str = (f"In {os.path.basename(parser.filename)}, "
                      f"line {parser.current_line_index + 1} "
-                     f"({parser.current_line.rstrip()})")
+                     f"({parser.current_line})")
         if message:
             info = info + f": {message}"
         super().__init__(info)
@@ -420,12 +418,12 @@ def main():
         while parser.has_more_lines():
             match parser.command_type:
                 case Command.ARITHMETIC:
-                    writer.write_arithmetic(parser.arg(1))
+                    writer.write_arithmetic(parser.arg1)
                 case Command.PUSH|Command.POP:
                     writer.write_push_pop(
                         parser.command_type,
-                        parser.arg(1),
-                        parser.arg(2)
+                        parser.arg1,
+                        parser.arg2
                     )
             parser.advance()
 
