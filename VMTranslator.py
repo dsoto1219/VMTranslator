@@ -419,7 +419,7 @@ class CodeWriter:
                     ''').format(CONST=index)
                 elif command_type == Command.POP:
                     # Command isn't allowed. Source:
-                    # http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/I-m-confused-in-push-pop-constent-x-td4028972.html # noqa
+                    # http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/I-m-confused-in-push-pop-constent-x-td4028972.html
                     raise ValueError("Undefined behavior: cannot pop constant off of stack.")
             case "static":
                 if index < 16 or index > 255:
