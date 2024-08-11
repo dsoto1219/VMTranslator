@@ -354,7 +354,7 @@ class CodeWriter:
                 if command_type == Command.PUSH:
                     # Push value at THIS or THAT to the stack.
                     asm_cmd = dedent('''\
-                    @{SYM}
+                        @{SYM}
                         D=M
                         @SP
                         A=M
