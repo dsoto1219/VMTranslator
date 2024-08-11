@@ -2,6 +2,7 @@ import argparse
 import constants
 from constants import Command, REGEXES
 import os.path
+from pathlib import Path
 import re
 from textwrap import dedent
 from typing import Optional, TextIO
@@ -426,7 +427,28 @@ class CodeWriter:
                     raise ValueError(f"Index {index} invalid, must be an "
                                       "integer between 16 and 255, inclusive "
                                       "(Parser Error)")
-                ...
+                
+                if command_type == Command.PUSH:
+                    asm_cmd = '''\
+                        @{FILENAME}.{IND}
+                        D=M
+                        @SP
+                        A=M
+                        M=D
+                        @SP
+                        M=M+1
+                    '''.format(FILENAME=Path(self.outfile.name).stem,
+                               IND=index)
+                elif command_type == Command.POP:
+                    asm_cmd = '''\
+                        @SP
+                        AM=M-1
+                        D=M
+                        @{FILENAME}.{IND}
+                        M=D
+                    '''.format(FILENAME=Path(self.outfile.name).stem,
+                               IND=index)
+
         self.outfile.write(asm_cmd)
 
 
