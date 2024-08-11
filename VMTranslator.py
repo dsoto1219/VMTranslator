@@ -130,7 +130,7 @@ class Parser:
             if self.arg1 == "constant" and self.command_type == "pop":
                 raise ParserError(self, "pop not defined when segment is "
                                         "constant")
-            if self.arg1 == "static" and self.arg2 >= 239:
+            if self.arg1 == "static" and self.arg2 > 239:
                 raise ParserError(self, "segment index can only be between 0 "
                                         "and 239, inclusive")
         # Last case: All whitespace or comment
@@ -422,7 +422,7 @@ class CodeWriter:
                     # http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/I-m-confused-in-push-pop-constent-x-td4028972.html
                     raise ValueError("Undefined behavior: cannot pop constant off of stack.")
             case "static":
-                if index < 16 or index > 255:
+                if index > 239:
                     raise ValueError(f"Index {index} invalid, must be an "
                                       "integer between 16 and 255, inclusive "
                                       "(Parser Error)")
