@@ -80,6 +80,9 @@ class Parser:
                 flags=re.X):
             self.command_type = Command.ARITHMETIC
             self.arg1 = matches.groupdict()['cmd']
+            assert self.arg1 in constants.TYPE_COMMANDS['arithmetic'], \
+                ("Regex error, incorrectly found arg1 to be one of the "
+                "arithmetic commands.")
         # Case 2: Memory access command (push, pop)
         elif matches := re.fullmatch(
                 pattern=r'''
@@ -110,6 +113,26 @@ class Parser:
                 raise ParserError(self, "Regex incorrectly matched index "
                                         "that is not a number (Error in "
                                         "Parser implementation.")
+            # regex should never match this, but adding this anyway to add a 
+            # first line of defense for CodeWriter
+            if self.arg2 < 0:
+                raise ParserError(self, "Regex incorrectly matched negative "
+                                        "index (Error in Parser "
+                                        "implementation)")
+            
+            # Segment-specific checks (Nisan & Schocken, 2021, p. 191)
+            if self.arg1 == "pointer" and self.arg2 not in {0, 1}:
+                raise ParserError(self, "When segment is pointer, index "
+                                        "should either be 0 or 1")
+            if self.arg1 == "temp" and (self.arg2 < 5 or self.arg2 > 12):
+                raise ParserError(self, "temp index must be between 5 and 12, "
+                                        "inclusive")
+            if self.arg1 == "constant" and self.command_type == "pop":
+                raise ParserError(self, "pop not defined when segment is "
+                                        "constant")
+            if self.arg1 == "static" and self.arg2 >= 239:
+                raise ParserError(self, "segment index can only be between 0 "
+                                        "and 239, inclusive")
         # Last case: All whitespace or comment
         elif matches := re.fullmatch(
                 pattern=r"^\s*(?://.*)?$", 
@@ -270,9 +293,10 @@ class CodeWriter:
         """
         if command_type not in {Command.PUSH, Command.POP}:
             raise ValueError(f"Command type {command_type} invalid, must be "
-                              "Command.PUSH or Command.POP")
+                              "Command.PUSH or Command.POP (Parser error)")
         if index < 0:
-            raise ValueError(f"Index {index} invalid, must be non-negative.")
+            raise ValueError(f"Index {index} invalid, must be non-negative " 
+                              "(Parser Error)")
 
         if not self.comments_off:
             self.outfile.write(f"// {command_type} {segment} {index}")
@@ -323,8 +347,8 @@ class CodeWriter:
                     # "pointer 1" correponds to "THAT" register pointer
                     sym = "THAT"
                 else:
-                    raise ValueError(f"Index {index} invalid, "
-                                      "can only be 0 or 1.")
+                    raise ValueError(f"Index {index} invalid, must be either "
+                                      "0 or 1 (Parser error).")
 
                 if command_type == Command.PUSH:
                     # Push value at THIS or THAT to the stack.
@@ -400,7 +424,8 @@ class CodeWriter:
             case "static":
                 if index < 16 or index > 255:
                     raise ValueError(f"Index {index} invalid, must be an "
-                                      "integer between 16 and 255, inclusive.")
+                                      "integer between 16 and 255, inclusive "
+                                      "(Parser Error)")
                 ...
         self.outfile.write(asm_cmd)
 
