@@ -256,16 +256,16 @@ class CodeWriter:
             # Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
-                @.{CMD}{N}
-                D-M;J{CMD}
-                M=0
-                @.END-{CMD}{N}
-                0;JMP
-                (.{CMD}{N})
-                    M=-1
-                (.END-{CMD}{N})
-                ''').format(CMD=vm_command.upper(), 
-                           n=self.label_cnts[vm_command])
+                    @.{CMD}{N}
+                    D-M;J{CMD}
+                    M=0
+                    @.END-{CMD}{N}
+                    0;JMP
+                    (.{CMD}{N})
+                        M=-1
+                    (.END-{CMD}{N})
+                    ''').format(CMD=vm_command.upper(), 
+                            n=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
             # Logical commands
             case "and":
