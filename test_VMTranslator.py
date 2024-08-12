@@ -5,8 +5,12 @@ import pytest
 
 
 basic_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\BasicTest\BasicTest.vm"
+# tests for pointer segments
 pointer_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\PointerTest\PointerTest.vm"
+# tests for static segments
 static_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\StaticTest\StaticTest.vm"
+# tests for comparison commands
+stack_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\StackArithmetic\StackTest\StackTest.vm"
 
 
 def test_basic_test():
@@ -129,3 +133,66 @@ def test_static_test():
         assert parser.command_type == Command.PUSH
         assert parser.arg1 == "static"
         assert parser.arg2 == 3
+
+
+def test_stack_test():
+    with open(stack_test) as tf:
+        parser = vmt.Parser(tf)
+        for _ in range(9):
+            parser.advance()
+        # Line 10, "eq"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "eq"
+        # Make sure assignment raises error
+        with pytest.raises(vmt.ParserError) as pe:
+            parser.arg2 = 2
+        assert str(pe.value) == ("In StackTest.vm, line 10 (eq): arg2 should "
+                                 "only be assigned if command type is PUSH, "
+                                 "POP, FUNCTION, or CALL, not "
+                                 "Command.ARITHMETIC")
+
+        for _ in range(9):
+            parser.advance()
+        # Line 19, "lt"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "lt"
+
+        for _ in range(9):
+            parser.advance()
+        # Line 28, "lt"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "gt"
+
+        for _ in range(10):
+            parser.advance()
+        # Line 38, "add"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "add"
+
+        for _ in range(2):
+            parser.advance()
+        # Line 40, "sub"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "sub"
+
+        parser.advance()
+        # Line 41, "neg"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "neg"
+
+        parser.advance()
+        # Line 42, "and"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "and"
+
+
+        parser.advance()
+        parser.advance()
+        # Line 44, "or"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "or"
+
+        parser.advance()
+        # Line 45, "not"
+        assert parser.command_type == Command.ARITHMETIC
+        assert parser.arg1 == "not"
