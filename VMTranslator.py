@@ -257,10 +257,10 @@ class CodeWriter:
             # Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
-                @{CMD}.{m}
+                @.{CMD}{m}
                 D-M;J{CMD}
                 M=0
-                @{CMD}.{n}
+                @.{CMD}{n}
                 0;JMP
                 (EQ.{m})
                     M=-1
