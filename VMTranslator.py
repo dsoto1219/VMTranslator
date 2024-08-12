@@ -207,11 +207,10 @@ class CodeWriter:
         # commands require labels in order to work---to avoid creating multiple
         # labels of the same name, we number the labels starting from 1, and
         # increment their numbers after printing them.
-        self.label_cnts = {
+        self.label_cnts: dict[str, int] = {
             "eq" : 1,
             "gt" : 1,
             "lt" : 1,
-            "continue": 1
         }
 
     def write_arithmetic(self, vm_command: str) -> None:
@@ -257,19 +256,17 @@ class CodeWriter:
             # Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
-                @{CMD}.{m}
+                @.{CMD}{N}
                 D-M;J{CMD}
                 M=0
-                @{CMD}.{n}
+                @.END-{CMD}{N}
                 0;JMP
-                (EQ.{m})
+                (.{CMD}{N})
                     M=-1
-                (CONTINUE.{n})
+                (.END-{CMD}{N})
                 ''').format(CMD=vm_command.upper(), 
-                           m=self.label_cnts[vm_command], 
-                           n=self.label_cnts["continue"])
+                           n=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
-                self.label_cnts["continue"] += 1
             # Logical commands
             case "and":
                 asm_cmd = 'M=D&M\n'
