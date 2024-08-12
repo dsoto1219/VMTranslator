@@ -1,13 +1,15 @@
+"""Parser tests."""
 import VMTranslator as vmt
 from constants import Command
 import pytest
 
 
 basic_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\BasicTest\BasicTest.vm"
+pointer_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\PointerTest\PointerTest.vm"
 
 
-# Parser tests
-def test_parser():
+def test_basic_test():
+    # Local Test
     with open(basic_test) as tf:
         parser = vmt.Parser(tf)
         # At line 1
@@ -62,3 +64,49 @@ def test_parser():
         with pytest.raises(IndexError):
             for _ in range(7):
                 parser.advance()
+
+
+def test_pointer_test():
+    with open(pointer_test) as tf:
+        parser = vmt.Parser(tf)
+        for _ in range(8):
+            parser.advance()
+        # Goto line 9, "pop pointer 0"
+        assert parser.command_type == Command.POP
+        assert parser.arg1 == "pointer"
+        assert parser.arg2 == 0
+
+        parser.advance()
+        parser.advance()
+        # Line 11, "pop pointer 1"
+        assert parser.command_type == Command.POP
+        assert parser.arg1 == "pointer"
+        assert parser.arg2 == 1
+
+        parser.advance()
+        parser.advance()
+        # Line 13, "pop this 2"
+        assert parser.command_type == Command.POP
+        assert parser.arg1 == "this"
+        assert parser.arg2 == 2
+
+        parser.advance()
+        parser.advance()
+        # Line 15, "pop that 6"
+        assert parser.command_type == Command.POP
+        assert parser.arg1 == "that"
+        assert parser.arg2 == 6
+
+        for _ in range(4):
+            parser.advance()
+        # Line 19, "pop that 6"
+        assert parser.command_type == Command.PUSH
+        assert parser.arg1 == "this"
+        assert parser.arg2 == 2
+
+        parser.advance()
+        parser.advance()
+        # Line 21, "pop that 6"
+        assert parser.command_type == Command.PUSH
+        assert parser.arg1 == "that"
+        assert parser.arg2 == 6
