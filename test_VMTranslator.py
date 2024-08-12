@@ -6,6 +6,7 @@ import pytest
 
 basic_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\BasicTest\BasicTest.vm"
 pointer_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\PointerTest\PointerTest.vm"
+static_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\StaticTest\StaticTest.vm"
 
 
 def test_basic_test():
@@ -110,3 +111,21 @@ def test_pointer_test():
         assert parser.command_type == Command.PUSH
         assert parser.arg1 == "that"
         assert parser.arg2 == 6
+
+
+def test_static_test():
+    with open(static_test) as tf:
+        parser = vmt.Parser(tf)
+        for _ in range(9):
+            parser.advance()
+        # Line 10, "pop static 8"
+        assert parser.command_type == Command.POP
+        assert parser.arg1 == "static"
+        assert parser.arg2 == 8
+
+        for _ in range(3):
+            parser.advance()
+        # Line 12, "push static 3"
+        assert parser.command_type == Command.PUSH
+        assert parser.arg1 == "static"
+        assert parser.arg2 == 3
