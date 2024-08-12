@@ -257,14 +257,14 @@ class CodeWriter:
             # Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
-                @{CMD}.{m}
+                @.{CMD}{m}
                 D-M;J{CMD}
                 M=0
-                @{CMD}.{n}
+                @.{CMD}{n}
                 0;JMP
-                (EQ.{m})
+                (.{CMD}{m})
                     M=-1
-                (CONTINUE.{n})
+                (.{CONTINUE}.{n})
                 ''').format(CMD=vm_command.upper(), 
                            m=self.label_cnts[vm_command], 
                            n=self.label_cnts["continue"])
