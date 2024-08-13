@@ -4,6 +4,7 @@ from constants import Command
 import pytest
 
 
+# tests for other segments, whitespace/comments, and end-of-line error
 basic_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\BasicTest\BasicTest.vm"
 # tests for pointer segments
 pointer_test = r"C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\PointerTest\PointerTest.vm"
@@ -17,58 +18,57 @@ def test_basic_test():
     # Local Test
     with open(basic_test) as tf:
         parser = vmt.Parser(tf)
-        # At line 1
+        # Line 1, "// This file is part of www.nand2tetris.org"
         assert parser.has_more_lines() == True
         assert parser.command_type == None
 
-        # Advance to first line with real code
-        # One test for each command type
-        for _ in range(6):
+        # Line 5, "" (empty)
+        for _ in range(4):
             parser.advance()
-        # At line 7
+
+        # Advance to first line with real code
+        # One test for each command type and segment combination
+        for _ in range(2):
+            parser.advance()
+        # Line 7, "push constant 10"
         assert parser.has_more_lines() == True
         assert parser.command_type == Command.PUSH
         assert parser.arg1 == "constant"
         assert parser.arg2 == 10
 
         parser.advance()
-        # At line 8
+        # Line 8, "pop local 0"
         assert parser.has_more_lines() == True
         assert parser.command_type == Command.POP
         assert parser.arg1 == "local"
         assert parser.arg2 == 0
 
-        for _ in range(15):
+        for _ in range(3):
             parser.advance()
-        # At line 23
+        # Line 11, "pop argument 2"
         assert parser.has_more_lines() == True
-        assert parser.command_type == Command.ARITHMETIC
-        assert parser.arg1 == "add"
-        # Test for parser error
-        with pytest.raises(vmt.ParserError) as pe:
-            parser.arg2 = 2
-        assert str(pe.value) == ("In BasicTest.vm, line 23 (add): arg2 should "
-                                 "only be assigned if command type is PUSH, "
-                                 "POP, FUNCTION, or CALL, not "
-                                 "Command.ARITHMETIC")
-        
-        parser.advance()
-        parser.advance()
-        # At line 25
-        assert parser.has_more_lines() == True
-        assert parser.command_type == Command.ARITHMETIC
-        assert parser.arg1 == "sub"
-        with pytest.raises(vmt.ParserError) as pe:
-            parser.arg2 = 2
-        assert str(pe.value) == ("In BasicTest.vm, line 25 (sub): arg2 should "
-                                 "only be assigned if command type is PUSH, "
-                                 "POP, FUNCTION, or CALL, not "
-                                 "Command.ARITHMETIC")
+        assert parser.command_type == Command.POP
+        assert parser.arg1 == "argument"
+        assert parser.arg2 == 2
 
-        # At line 32 (should be out of range)
+        for _ in range(10):
+            parser.advance()
+        # Line 21, "push local 0"
+        assert parser.command_type == Command.PUSH
+        assert parser.arg1 == "local"
+        assert parser.arg2 == 0
+
+        for _ in range(3):
+            parser.advance()
+        # Line 24, "push argument 1"
+        assert parser.command_type == Command.PUSH
+        assert parser.arg1 == "argument"
+        assert parser.arg2 == 1
+
+        parser.current_line_index = 32
+        assert parser.has_more_lines() == False
         with pytest.raises(IndexError):
-            for _ in range(7):
-                parser.advance()
+            parser.advance()
 
 
 def test_pointer_test():
