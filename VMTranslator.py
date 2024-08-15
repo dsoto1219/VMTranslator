@@ -270,7 +270,7 @@ class CodeWriter:
                         M=-1
                     (.END-{CMD}{N})
                     ''').format(CMD=vm_command.upper(), 
-                            n=self.label_cnts[vm_command])
+                                N=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
             # Logical commands
             case "and":
