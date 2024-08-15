@@ -457,9 +457,10 @@ class CodeWriter:
 def main():
     argparser = argparse.ArgumentParser(
         prog='VMTranslator',
-        description="Translates .vm files into HACK Assembly files "
-                    "(ending in .asm)",
-    )
+        description="Takes in .vm files as input and outputs its "
+                    "corresponding HACK Assembly file, ending in .asm",
+        epilog=".asm files are saved to the same directory in which the .vm "
+               "file was in")
     argparser.add_argument('infile')
     argparser.add_argument('-nc', '--no-comments', action='store_false')
     args = argparser.parse_args()
@@ -479,8 +480,7 @@ def main():
                     writer.write_push_pop(
                         parser.command_type,
                         parser.arg1,
-                        parser.arg2
-                    )
+                        parser.arg2)
             parser.advance()
 
 
