@@ -464,7 +464,7 @@ class CodeWriter:
                         @SP
                         M=M+1
                     ''').format(FILENAME=Path(self.outfile.name).stem,
-                               IND=index)
+                                IND=index)
                 elif command_type == Command.POP:
                     asm_cmd = dedent('''\
                         @SP
@@ -473,7 +473,7 @@ class CodeWriter:
                         @{FILENAME}.{IND}
                         M=D
                     ''').format(FILENAME=Path(self.outfile.name).stem,
-                               IND=index)
+                                IND=index)
 
         self.outfile.write(asm_cmd)
 
@@ -481,8 +481,8 @@ class CodeWriter:
         """Write end-of-file loop to filename.asm."""
         self.outfile.write(dedent('''\
             (END)
-            @END
-            0;JMP
+                @END
+                0;JMP
         '''))
 
 
