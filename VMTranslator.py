@@ -463,7 +463,8 @@ class CodeWriter:
 def main():
     argparser = argparse.ArgumentParser(
         prog='VMTranslator',
-        description="Translates .vm files into HACK Assembly files (ending in .asm)",
+        description="Translates .vm files into HACK Assembly files "
+                    "(ending in .asm)",
     )
     argparser.add_argument('infile')
     argparser.add_argument('-nc', '--no-comments', action='store_false')
@@ -473,9 +474,9 @@ def main():
     if ext != ".vm":
         raise AttributeError(f"File {args.infile} does have a .vm extension!")
 
-    with open(args.file) as in_f, open(f"{filename}.asm") as out_f:
+    with open(args.infile) as in_f, open(f"{filename}.asm", "w") as out_f:
         parser = Parser(in_f)
-        writer = CodeWriter(out_f, args.nc)
+        writer = CodeWriter(out_f, args.no_comments)
         while parser.has_more_lines():
             match parser.command_type:
                 case Command.ARITHMETIC:
