@@ -13,6 +13,7 @@ class Parser:
     Object for parsing file with vm code. See (Nisan & Schocken, 2021, p. 196)
     for motivation.
     """
+
     def __init__(self, input_file: TextIO) -> None:
         # Filename stored in case of an error, see ParserError
         self.filename = input_file.name
@@ -194,6 +195,7 @@ class ParserError(Exception):
     line number. If an error message is provided, this message will be printed
     alongside this information.
     """
+
     def __init__(self, parser: Parser, message: str="") -> None:
         info: str = (f"In {os.path.basename(parser.filename)}, "
                      f"line {parser.current_line_index + 1} "
