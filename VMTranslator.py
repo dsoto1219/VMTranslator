@@ -224,7 +224,7 @@ class CodeWriter:
                     D=A
                     @SP
                     M=D
-                    ''')
+                ''')
         self.outfile.write(self._SP_INIT)
         # This dictionary is for the `write_arithmetic`` method. Its comparison
         # commands require labels in order to work---to avoid creating multiple
@@ -258,7 +258,7 @@ class CodeWriter:
         self.outfile.write(dedent('''\
                 @SP
                 AM=M-1
-                '''))
+            '''))
         # If the command takes in two arguments, save the first argument into
         # D register and decrement the A register so that the second argument
         # is in the M register. We also, again, decrement the stack pointer.
@@ -266,7 +266,7 @@ class CodeWriter:
             self.outfile.write(dedent('''\
                     D=M
                     AM=A-1
-                    '''))
+                '''))
         asm_cmd: str
         match vm_command:
             # Arithmetic Commands 
@@ -287,8 +287,8 @@ class CodeWriter:
                     (.{CMD}{N})
                         M=-1
                     (.END-{CMD}{N})
-                    ''').format(CMD=vm_command.upper(), 
-                                N=self.label_cnts[vm_command])
+                ''').format(CMD=vm_command.upper(), 
+                            N=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
             # Logical commands
             case "and":
@@ -302,7 +302,7 @@ class CodeWriter:
         self.outfile.write(dedent('''\
                 @SP
                 M=M+1
-                '''))
+            '''))
     
     def write_push_pop(self, command_type: Command, 
                        segment: str, 
@@ -455,7 +455,7 @@ class CodeWriter:
                                       "(Parser Error)")
                 
                 if command_type == Command.PUSH:
-                    asm_cmd = '''\
+                    asm_cmd = dedent('''\
                         @{FILENAME}.{IND}
                         D=M
                         @SP
@@ -463,16 +463,16 @@ class CodeWriter:
                         M=D
                         @SP
                         M=M+1
-                    '''.format(FILENAME=Path(self.outfile.name).stem,
+                    ''').format(FILENAME=Path(self.outfile.name).stem,
                                IND=index)
                 elif command_type == Command.POP:
-                    asm_cmd = '''\
+                    asm_cmd = dedent('''\
                         @SP
                         AM=M-1
                         D=M
                         @{FILENAME}.{IND}
                         M=D
-                    '''.format(FILENAME=Path(self.outfile.name).stem,
+                    ''').format(FILENAME=Path(self.outfile.name).stem,
                                IND=index)
 
         self.outfile.write(asm_cmd)
