@@ -302,7 +302,13 @@ class CodeWriter:
                               "(Parser Error)")
 
         if not self.comments_off:
-            self.outfile.write(f"// {command_type} {segment} {index}")
+            command: str
+            match command_type:
+                case Command.PUSH:
+                    command = "push"
+                case Command.POP:
+                    command = "pop"
+            self.outfile.write(f"// {command} {segment} {index}\n")
 
         asm_cmd: str
         match segment:
@@ -395,7 +401,7 @@ class CodeWriter:
                 elif command_type == Command.POP:
                     # Pop top of the stack to RAM[5 + index]. Uses the same
                     # trick as the Pop command in the first case.
-                    asm_cmd = ('''\
+                    asm_cmd = dedent('''\
                         @SP
                         AM=M-1
                         D=M
@@ -462,7 +468,7 @@ def main():
         epilog=".asm files are saved to the same directory in which the .vm "
                "file was in")
     argparser.add_argument('infile')
-    argparser.add_argument('-nc', '--no-comments', action='store_false')
+    argparser.add_argument('-nc', '--no-comments', action='store_true')
     args = argparser.parse_args()
 
     filename, ext = os.path.splitext(args.infile)

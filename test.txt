@@ -1,1 +1,3 @@
 python VMTranslator.py C:\Users\danim\OneDrive\learn-coding\nand2tetris\projects\07\MemoryAccess\BasicTest\BasicTest.vm
+
+CPUEmulator.bat BasicTest.asm
