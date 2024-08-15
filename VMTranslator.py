@@ -175,8 +175,10 @@ class Parser:
 
 class ParserError(Exception):
     """
-    Custom exception that takes in an optional line number and filename, and
-    prints this information alongside an error message if provided.
+    Custom exception that takes in an instance of a parser object, and
+    prints out the current file and line that is being parsed along with the
+    line number. If an error message is provided, this message will be printed
+    alongside this information.
     """
     def __init__(self, parser: Parser, message: str="") -> None:
         info: str = (f"In {os.path.basename(parser.filename)}, "
