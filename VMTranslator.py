@@ -158,16 +158,10 @@ class Parser:
 
     def has_more_lines(self) -> bool:
         """
-        Has the index of the current line we are parsing yet to exceed the 
-        index of the last line of the VM code?
-
-        Ex: If len(self.lines) = 16, the index of the last line in self.lines
-        is len(self.lines) - 1 = 15. So, if self.current_line_index = 10, we
-        have not passed the last line, nor have we if 
-        `self.current_line_index = 15`. But if `self.current_line_index = 16`,
-        we have passed it.
+        Return True if the current line of code (at current_line_index) is the
+        last line of code in the file, returns False otherwise.
         """
-        return self.current_line_index < len(self.lines) 
+        return self.current_line_index < len(self.lines) - 1
     
     def advance(self) -> None:
         """
