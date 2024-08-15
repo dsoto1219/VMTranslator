@@ -31,6 +31,17 @@ class Parser:
     
     @property
     def arg1(self) -> Optional[str]:
+        """
+        Returns the first argument of the current command.
+
+        In the case of a Command.ARITHMETIC, the command itself 
+        (add, sub, etc.) is returned. 
+
+        Should not be called if the current command is Command.RETURN.
+        """
+        if self.command_type == Command.RETURN:
+            raise ValueError("arg1 should not be assigned if command type "
+                              "is RETURN")
         return self._arg1
     
     @arg1.setter
@@ -42,7 +53,10 @@ class Parser:
 
     @property
     def arg2(self) -> Optional[int]:
-        """Returns the second argument of the current command."""
+        """
+        Returns the second argument of the current command. Should only be
+        called if the current command is PUSH, POP, FUNCTION, or CALL.
+        """
         if self.command_type not in {
                 Command.PUSH,
                 Command.POP,
