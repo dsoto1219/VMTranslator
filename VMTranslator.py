@@ -459,6 +459,14 @@ class CodeWriter:
 
         self.outfile.write(asm_cmd)
 
+    def write_end(self) -> None:
+        """Write end-of-file loop to filename.asm."""
+        self.outfile.write(dedent('''\
+            (END)
+            @END
+            0;JMP
+        '''))
+
 
 def main():
     argparser = argparse.ArgumentParser(
@@ -488,6 +496,7 @@ def main():
                         parser.arg1,
                         parser.arg2)
             parser.advance()
+        writer.write_end()
 
 
 if __name__ == "__main__":
