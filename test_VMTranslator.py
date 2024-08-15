@@ -143,11 +143,11 @@ def test_stack_test():
         # Line 10, "eq"
         assert parser.command_type == Command.ARITHMETIC
         assert parser.arg1 == "eq"
-        # Make sure assignment raises error
+        # Make sure getting arg2 raises error
         with pytest.raises(vmt.ParserError) as pe:
-            parser.arg2 = 2
+            parser.arg2
         assert str(pe.value) == ("In StackTest.vm, line 10 (eq): arg2 should "
-                                 "only be assigned if command type is PUSH, "
+                                 "only be accessed if command type is PUSH, "
                                  "POP, FUNCTION, or CALL, not "
                                  "Command.ARITHMETIC")
 
@@ -156,6 +156,13 @@ def test_stack_test():
         # Line 19, "lt"
         assert parser.command_type == Command.ARITHMETIC
         assert parser.arg1 == "lt"
+        # Make sure assignment raises error
+        with pytest.raises(vmt.ParserError) as pe:
+            parser.arg2 = 2
+        assert str(pe.value) == ("In StackTest.vm, line 19 (lt): arg2 should "
+                                 "only be assigned if command type is PUSH, "
+                                 "POP, FUNCTION, or CALL, not "
+                                 "Command.ARITHMETIC")
 
         for _ in range(9):
             parser.advance()

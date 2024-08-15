@@ -43,6 +43,16 @@ class Parser:
     @property
     def arg2(self) -> Optional[int]:
         """Returns the second argument of the current command."""
+        if self.command_type not in {
+                Command.PUSH,
+                Command.POP,
+                Command.FUNCTION,
+                Command.CALL,
+            }:
+            raise ParserError(self, 
+                              "arg2 should only be accessed if command type "
+                              "is PUSH, POP, FUNCTION, or CALL, not "
+                             f"{self.command_type}")
         return self._arg2
     
     @arg2.setter
