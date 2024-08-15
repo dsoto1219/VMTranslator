@@ -71,13 +71,14 @@ class Parser:
 
     def _parse_line(self) -> None:
         """
-        Parses current line of vm code with regex, with expected format
-            command arg1 arg2
-        into the tuple, (command, arg1, arg2), where arg1 and arg2 are 
-        optional.
+        Parses current line of vm code with regex, with the following possible
+        valid formats:
+            1. [arithmetic command]
+            2. [push/pop] [segment] [index]
+        And saves results into command_type, arg1, and arg2, accordingly.
         The current line is considered valid if it can either be parsed into
         this form or if it is a comment or whitespace. If line is not valid, 
-        the method raises an AttributeError.
+        the method raises a corresponding ParserError.
         """
         self.current_line = self.current_line.rstrip()
         # Case 1: Arithmetic command (add, sub, eq, ...)
