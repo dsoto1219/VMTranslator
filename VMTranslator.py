@@ -100,7 +100,7 @@ class Parser:
                 pattern=r'''
                 ^\s*                       # Optional whitespace
                 (?P<cmd>{arithmetic_cmds}) # Valid arithmetic commands
-                \s*(?://.*)?$            # Optional whitespace+comment
+                \s*(?://.*)?$              # Optional whitespace+comment
                 '''.format(arithmetic_cmds=REGEXES['command']['arithmetic']),
                 string=self.current_line,
                 flags=re.X):
@@ -116,7 +116,7 @@ class Parser:
                 (?P<cmd>{memory_access_cmds})\s+ # Valid memory access command
                 (?P<segment>{valid_segments})\s+ # Valid virtual memory segment
                 (?P<index>\d+)                   # Any non-negative integer
-                \s*(?://.*)?$                  # Optional whitespace+comment
+                \s*(?://.*)?$                    # Optional whitespace+comment
                 '''.format(
                     memory_access_cmds=REGEXES['command']['memory_access'],
                     valid_segments=REGEXES['segment']),
