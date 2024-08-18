@@ -270,8 +270,8 @@ class CodeWriter:
         # the stack (Nisan & Schocken, 2021, p. 187). The net effect of this is
         # decrementing the stack pointer once. Thus, with this in mind,
         # mind, we start by decrementing the stack pointer, and this will be 
-        # the only modification to it. We then save the first argument into the 
-        # D register, and then decrement the A register so that the second 
+        # the only modification to it. We then save the second argument into the 
+        # D register, and then decrement the A register so that the first 
         # argument is in the M register.
         else:
             self.outfile.write(dedent('''\
