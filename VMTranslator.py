@@ -248,7 +248,6 @@ class CodeWriter:
         if not self.comments_off:
             self.outfile.write(f"// {vm_command}\n")
 
-
         # If the command takes in only one argument, the implementation 
         # specifies that we pop one element off of the stack and push its 
         # result back onto the stack (Nisan & Schocken, 2021, p. 187). Thus,
@@ -263,10 +262,10 @@ class CodeWriter:
         # that we pop two elements off of the stack and push their result onto
         # the stack (Nisan & Schocken, 2021, p. 187). The net effect of this is
         # decrementing the stack pointer once. Thus, with this in mind,
-        # mind, we start by decrementing the stack pointer (this will be 
-        # the only modification to SP), save the our first argument into the D
-        # register, and decrement the A register so that the second argument is 
-        # in the M register.
+        # mind, we start by decrementing the stack pointer, and this will be 
+        # the only modification to it. We then save the first argument into the 
+        # D register, and then decrement the A register so that the second 
+        # argument is in the M register.
         else:
             self.outfile.write(dedent('''\
                     @SP
@@ -289,14 +288,18 @@ class CodeWriter:
             ## Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
+                    D=D-M
                     @.{CMD}.{N}
-                    D-M;J{CMD}
-                    M=0
+                    D;J{CMD}
+                    D=0
                     @.END_{CMD}.{N}
                     0;JMP
                     (.{CMD}.{N})
-                        M=-1
+                        D=-1
                     (.END_{CMD}.{N})
+                        @SP
+                        A=M-1
+                        M=D
                 ''').format(CMD=vm_command.upper(), 
                             N=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
