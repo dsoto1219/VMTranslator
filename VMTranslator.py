@@ -110,8 +110,8 @@ class Parser:
             self.command_type = Command.ARITHMETIC
             self.arg1 = matches.groupdict()['cmd']
             assert self.arg1 in constants.TYPE_COMMANDS['arithmetic'], \
-                ("Regex error, incorrectly found arg1 to be one of the "
-                "arithmetic commands.")
+                ("Regex error, incorrectly found arg1 to not be one of the "
+                "valid arithmetic commands.")
         # Case 2: Memory access command (push, pop)
         elif matches := re.fullmatch(
                 pattern=r'''
