@@ -15,7 +15,8 @@ class Parser:
     """
 
     def __init__(self, input_file: TextIO) -> None:
-        # Filename stored in case of an error, see ParserError
+        # Although we don't store the file object itself, we store its 
+        # filename in case of an error (see ParserError).
         self.filename = input_file.name
 
         self.lines: list[str] = input_file.readlines()
