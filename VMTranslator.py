@@ -19,16 +19,17 @@ class Parser:
         self.filename = input_file.name
 
         self.lines: list[str] = input_file.readlines()
-        self.current_line_index: int = 0
-        self.current_line: str = self.lines[self.current_line_index]
+        # Index of the current line. We initialize this at -1 so that when we
+        # call advance, we go to the first line of code (at index 0, a.k.a. 
+        # line no. 1)
+        self.current_line_index: int = -1
+        self.current_line: str # Stores current line as a string
 
-        # Instead of using the suggested subroutines for these, 
-        # we use class variables.
+        # Intialize relevant tokens to be searched for in each line. Instead 
+        # of using the suggested subroutines for these, we use class variables.
         self.command_type: Optional[Command] = None
         self._arg1: str
         self._arg2: int
-
-        self._parse_line()
     
     @property
     def arg1(self) -> Optional[str]:
@@ -173,14 +174,20 @@ class Parser:
 
     def has_more_lines(self) -> bool:
         """
-        Return True if the current line of code (at current_line_index) is the
-        last line of code in the file, returns False otherwise.
+        Returns True if there are more lines in the input, returns False 
+        otherwise. In particular, we return false if we have reached the
+        last line of the input.
         """
         return self.current_line_index < len(self.lines) - 1
     
     def advance(self) -> None:
         """
-        Advances to next line in VM code and parses the code. Expects user to
+        Advances to next line in the input and parses the code. This routine
+        should only be called if has_more_lines() is True. Initially, there is
+        no current command.
+        
+        
+        Expects user to
         check if there are any lines left via the `has_more_lines` method.
         """
         self.current_line_index += 1
@@ -453,6 +460,7 @@ def main():
         parser = Parser(in_f)
         writer = CodeWriter(out_f, args.no_comments)
         while parser.has_more_lines():
+            parser.advance()
             match parser.command_type:
                 case Command.ARITHMETIC:
                     writer.write_arithmetic(parser.arg1)
@@ -461,7 +469,6 @@ def main():
                         parser.command_type,
                         parser.arg1,
                         parser.arg2)
-            parser.advance()
         writer.write_end()
 
 
