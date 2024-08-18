@@ -186,10 +186,6 @@ class Parser:
         Advances to next line in the input and parses the code. This routine
         should only be called if has_more_lines() is True. Initially, there is
         no current command.
-        
-        
-        Expects user to
-        check if there are any lines left via the `has_more_lines` method.
         """
         self.current_line_index += 1
         self.current_line = self.lines[self.current_line_index]
