@@ -328,162 +328,107 @@ class CodeWriter:
                     command = "pop"
             self.outfile.write(f"// {command} {segment} {index}\n")
 
-        asm_cmd: str
-        match segment:
-            case "local"|"argument"|"this"|"that":
-                if command_type == Command.PUSH:
-                    # Push item at segment index to the stack. 
-                    asm_cmd = dedent('''\
-                        @{SYM}
-                        D=M
-                        @{IND}
-                        D=D+A
-                        @SP
-                        A=M
-                        M=D
-                        @SP
-                        M=M+1
-                    ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
-                                IND=index)
-                elif command_type == Command.POP:
-                    # Credit to https://evoniuk.github.io/posts/nand.html for 
-                    # this implementation, which makes use of clever 
-                    # "register-algebra" to implement this without temp 
-                    # variables. I made a few changes to reduce the count, but
-                    # it should work exactly the same.
-                    asm_cmd = dedent('''\
-                        @SP
-                        AM=M-1
-                        D=M
-                        @{SYM}
-                        D=D+M
-                        @{IND}
-                        D=D+A
-                        @SP
-                        A=M
-                        A=D-M
-                        M=D-A
-                    ''').format(SYM=constants.SEGMENT_SYMBOLS[segment],
-                                IND=index)
-            case "pointer":
-                sym: str
-                if index == 0:
-                    # "pointer 0" correponds to "THIS" register pointer
-                    sym = "THIS"
-                elif index == 1:
-                    # "pointer 1" correponds to "THAT" register pointer
-                    sym = "THAT"
+        # The value for the A-instruction that we use to get the address of
+        # the desired segment
+        symbol: str | dict = constants.SEGMENT_SYMBOLS[segment]
+        if segment == "pointer":
+            try:
+                symbol = symbol[index]
+            except IndexError:
+                raise ValueError("Indices for pointer segments can "
+                                    "only be 0 or 1")
+        elif segment == "static":
+            symbol = f"{Path(self.outfile.name).stem}.{index}"
+        
+        if command_type == Command.PUSH:
+            target: str # Where to store what we get after the A-instruction
+
+            # If segment is constant, think of the A-register as storing a 
+            # value, and we that value to the D-register
+            if segment == "constant":
+                symbol = index
+                target = 'A'
+            # Otherwise, think of the A-register as storing an address, and
+            # store the value at that address in the D-register
+            else:
+                target = 'M'
+
+            # Access address of base segment
+            self.outfile.write(f"@{symbol}\n")
+
+            if segment not in {"pointer", "constant", "static"}:
+                # For segments for which the index gives us trouble: If the 
+                # index is greater than 0, save the base pointer to the 
+                # D-register, and get to the address by setting the A-register
+                # to the index and adding the base address to it
+                if index > 0:
+                    self.outfile.write(dedent('''\
+                            D=M
+                            @{INDEX}
+                            A=D+A
+                        ''').format(INDEX=index))
+                # For otherwise trivial segments, simply set the A-register to 
+                # the address at the base pointer
                 else:
-                    raise ValueError(f"Index {index} invalid, must be either "
-                                      "0 or 1 (Parser error).")
+                    self.outfile.write("A=M\n")
+        
+            # Save the value at the address to the D-register
+            self.outfile.write(f"D={target}\n")
 
-                if command_type == Command.PUSH:
-                    # Push value at THIS or THAT to the stack.
-                    asm_cmd = dedent('''\
-                        @{SYM}
-                        D=M
-                        @SP
-                        A=M
-                        M=D
-                        @SP
-                        M=M+1
-                    ''').format(SYM=sym)
-                elif command_type == Command.POP:
-                    # Pop top of the stack to THIS or THAT pointer.
-                    asm_cmd = dedent('''\
-                        @SP
-                        AM=M-1
-                        D=M
-                        @{SYM}
-                        M=D
-                    ''').format(SYM=sym)
-            case "temp":
-                if index > 7:
-                    raise ValueError(f"Index {index} invalid, must be between "
-                                      "0 and 7, inclusive.")
+            # Access the top of the stack and set its value to the D-register,
+            # then increment the stack pointer
+            self.outfile.write(dedent('''\
+                    @SP
+                    A=M
+                    M=D
+                    @SP
+                    M=M+1
+                '''))
 
-                if command_type == Command.PUSH:
-                    # Push value at RAM[5 + i] to the stack.
-                    asm_cmd = dedent('''\
-                        @R5
-                        D=A
-                        @{IND}
-                        A=D+A
-                        D=M
-                        @SP
-                        A=M
+        elif command_type == Command.POP:
+            # Pop the top value off of the stack and save it into the 
+            # D-register
+            self.outfile.write(dedent('''\
+                    @SP
+                    AM=M-1
+                    D=M
+                '''))
+            
+            # In these simple cases, we simply take the value in the 
+            # D-register and store it in the desired address, without much
+            # issue.
+            if segment in {"pointer", "static"} or index == 0:
+                self.outfile.write(dedent('''\
+                        @{SYMBOL}
                         M=D
-                        @SP
-                        M=M+1
-                    ''').format(IND=index)
-                elif command_type == Command.POP:
-                    # Pop top of the stack to RAM[5 + index]. Uses the same
-                    # trick as the Pop command in the first case.
-                    asm_cmd = dedent('''\
-                        @SP
-                        AM=M-1
-                        D=M
-                        @R5
-                        D=D+A
-                        @{IND}
+                    ''').format(SYMBOL=symbol))
+            # Outside of these cases, the implementation becomes more complex.
+            # You are led to believe that the implemenation requires accessing
+            # a temporary variable; however, this is not necessary. Credit to
+            # https://evoniuk.github.io/posts/nand.html for this alternate 
+            # implementation, which makes use of clever "register-algebra"
+            # to implement this without temporary variables. I made a few
+            # changes to reduce the line count, but the exact same 
+            # functionality should remain.
+            else:
+                self.outfile.write(dedent('''\
+                        @{SYMBOL}
+                        D=D+M
+                        @{INDEX}
                         D=D+A
                         @SP
                         A=M
                         A=D-M
                         M=D-A
-                    ''').format(IND=index)
-            case "constant":
-                if command_type == Command.PUSH:
-                    # Push constant value to the stack.
-                    asm_cmd = dedent('''\
-                        @{CONST}
-                        D=A
-                        @SP
-                        A=M
-                        M=D
-                        @SP
-                        M=M+1
-                    ''').format(CONST=index)
-                elif command_type == Command.POP:
-                    # Command isn't allowed. Source:
-                    # http://nand2tetris-questions-and-answers-forum.52.s1.nabble.com/I-m-confused-in-push-pop-constent-x-td4028972.html
-                    raise ValueError("Undefined behavior: cannot pop constant off of stack.")
-            case "static":
-                if index > 239:
-                    raise ValueError(f"Index {index} invalid, must be an "
-                                      "integer between 16 and 255, inclusive "
-                                      "(Parser Error)")
-                
-                if command_type == Command.PUSH:
-                    asm_cmd = dedent('''\
-                        @{FILENAME}.{IND}
-                        D=M
-                        @SP
-                        A=M
-                        M=D
-                        @SP
-                        M=M+1
-                    ''').format(FILENAME=Path(self.outfile.name).stem,
-                                IND=index)
-                elif command_type == Command.POP:
-                    asm_cmd = dedent('''\
-                        @SP
-                        AM=M-1
-                        D=M
-                        @{FILENAME}.{IND}
-                        M=D
-                    ''').format(FILENAME=Path(self.outfile.name).stem,
-                                IND=index)
-
-        self.outfile.write(asm_cmd)
+                    ''').format(SYMBOL=symbol, INDEX=index))
 
     def write_end(self) -> None:
         """Write end-of-file loop to filename.asm."""
         self.outfile.write(dedent('''\
-            (END)
-                @END
-                0;JMP
-        '''))
+                (END)
+                    @END
+                    0;JMP
+            '''))
 
 
 def main():

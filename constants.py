@@ -70,14 +70,14 @@ would appear in HACK assembly.
 - If the symbol refers to a range of addresses, an empty string is provided
 that denotes this.
 """
-SEGMENT_SYMBOLS: dict[str, str] = {
+SEGMENT_SYMBOLS: dict = {
     "argument" : "ARG",
     "local" : "LCL",
     "static" : "", # RAM[16-255]
     "constant" : "SP",
     "this" : "THIS",
     "that" : "THAT",
-    "pointer" : "", # RAM[THIS], RAM[THAT]
+    "pointer" : {0: "THIS", 1: "THAT"}, # RAM[THIS], RAM[THAT]
     "temp" : "R5",
 }
 
