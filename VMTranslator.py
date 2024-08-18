@@ -248,6 +248,13 @@ class CodeWriter:
         if not self.comments_off:
             self.outfile.write(f"// {vm_command}\n")
 
+        # Suppose the stack looks like
+        #   x
+        #   y 
+        #   0 <- SP
+        # And we compute a two-argument command, we compute x (operation) y.
+        # If we compute a one-argument command, we compute (operation) y.
+
         # If the command takes in only one argument, the implementation 
         # specifies that we pop one element off of the stack and push its 
         # result back onto the stack (Nisan & Schocken, 2021, p. 187). Thus,
@@ -277,9 +284,9 @@ class CodeWriter:
         match vm_command:
             ## Arithmetic Commands 
             case "add":
-                asm_cmd = 'M=D+M\n'
+                asm_cmd = 'M=M+D\n'
             case "sub":
-                asm_cmd = 'M=D-M\n'
+                asm_cmd = 'M=M-D\n'
             case "neg":
                 asm_cmd = 'M=-M\n'
             # For comparison and logical commands, the result is -1 if the 
@@ -288,7 +295,7 @@ class CodeWriter:
             ## Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
-                    D=D-M
+                    D=M-D
                     @.{CMD}.{N}
                     D;J{CMD}
                     D=0
@@ -305,9 +312,9 @@ class CodeWriter:
                 self.label_cnts[vm_command] += 1
             ## Logical commands
             case "and":
-                asm_cmd = 'M=D&M\n'
+                asm_cmd = 'M=M&D\n'
             case "or":
-                asm_cmd = 'M=D|M\n'
+                asm_cmd = 'M=M|D\n'
             case "not":
                 asm_cmd = 'M=!M\n'
         self.outfile.write(asm_cmd)
