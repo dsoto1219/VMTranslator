@@ -243,35 +243,30 @@ class CodeWriter:
     def write_arithmetic(self, vm_command: str) -> None:
         """
         Writes to the output file the assembly code that implements the given 
-        arithmetic-logical `command`.
-
-        The two-argument commands work by popping the last two elements off the
-        stack, computing their result, and pushing that result to the stack.
-        The one-argument commands work in the same way, only they pop the last
-        element off only (Nisan & Schocken, 2021, p. 187).
-
-        For comparison and logical commands, the result is -1 if the operation
-        is true, and the result is 0 if the operation is false (source: 
-        testing with `VMTranslator.bat`).
+        arithmetic-logical `command`. See Nisan & Schocken, 2021 for details.
         """
         if not self.comments_off:
             self.outfile.write(f"// {vm_command}\n")
 
-        # If the command takes in only one argument, since we pop one element 
-        # off of the stack and pop its result back onto the stack, there is no
-        # change to the stack pointer. So, we simply access the value directly
-        # below the stack pointer.
+
+        # If the command takes in only one argument, the implementation 
+        # specifies that we pop one element off of the stack and push its 
+        # result back onto the stack (Nisan & Schocken, 2021, p. 187). Thus,
+        # since there is no change to the stack pointer, we simply access the
+        # value directly below the stack pointer as use this as our argument.
         if vm_command in {"neg", "not"}:
             self.outfile.write(dedent('''\
                     @SP
                     A=M-1
                 '''))
-        # If the command takes in two arguments, since we are popping two
-        # elements off of the stack and popping their result onto the stack,
-        # the net effect is decrementing the stack pointer once. With this in
-        # mind, we start by decrementing the stack pointer, save the first 
-        # argument into the D register, and decrement the A register so that
-        # the second argument is in the M register.
+        # If the command takes in two arguments, the implementation specifies
+        # that we pop two elements off of the stack and push their result onto
+        # the stack (Nisan & Schocken, 2021, p. 187). The net effect of this is
+        # decrementing the stack pointer once. Thus, with this in mind,
+        # mind, we start by decrementing the stack pointer (this will be 
+        # the only modification to SP), save the our first argument into the D
+        # register, and decrement the A register so that the second argument is 
+        # in the M register.
         else:
             self.outfile.write(dedent('''\
                     @SP
@@ -281,14 +276,17 @@ class CodeWriter:
                 '''))
         asm_cmd: str
         match vm_command:
-            # Arithmetic Commands 
+            ## Arithmetic Commands 
             case "add":
                 asm_cmd = 'M=D+M\n'
             case "sub":
                 asm_cmd = 'M=D-M\n'
             case "neg":
                 asm_cmd = 'M=-M\n'
-            # Comparison Commands
+            # For comparison and logical commands, the result is -1 if the 
+            # operation is true, and the result is 0 if the operation is false
+            # (Nisan & Schocken, 2021, p. 189).
+            ## Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
                     @.{CMD}.{N}
@@ -302,7 +300,7 @@ class CodeWriter:
                 ''').format(CMD=vm_command.upper(), 
                             N=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
-            # Logical commands
+            ## Logical commands
             case "and":
                 asm_cmd = 'M=D&M\n'
             case "or":
