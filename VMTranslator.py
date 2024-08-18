@@ -294,14 +294,14 @@ class CodeWriter:
             # Comparison Commands
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
-                    @.{CMD}{N}
+                    @.{CMD}.{N}
                     D-M;J{CMD}
                     M=0
-                    @.END-{CMD}{N}
+                    @.END_{CMD}.{N}
                     0;JMP
-                    (.{CMD}{N})
+                    (.{CMD}.{N})
                         M=-1
-                    (.END-{CMD}{N})
+                    (.END_{CMD}.{N})
                 ''').format(CMD=vm_command.upper(), 
                             N=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
