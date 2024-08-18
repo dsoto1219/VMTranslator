@@ -252,20 +252,28 @@ class CodeWriter:
         """
         if not self.comments_off:
             self.outfile.write(f"// {vm_command}\n")
-        # Start with A register one address below the top of the stack. The 
-        # value at M is the first argument. We also decrement the stack 
-        # pointer.
-        self.outfile.write(dedent('''\
-                @SP
-                AM=M-1
-            '''))
-        # If the command takes in two arguments, save the first argument into
-        # D register and decrement the A register so that the second argument
-        # is in the M register. We also, again, decrement the stack pointer.
-        if vm_command not in {"neg", "not"}:
+
+        # If the command takes in only one argument, since we pop one element 
+        # off of the stack and pop its result back onto the stack, there is no
+        # change to the stack pointer. So, we simply access the value directly
+        # below the stack pointer.
+        if vm_command in {"neg", "not"}:
             self.outfile.write(dedent('''\
+                    @SP
+                    A=M-1
+                '''))
+        # If the command takes in two arguments, since we are popping two
+        # elements off of the stack and popping their result onto the stack,
+        # the net effect is decrementing the stack pointer once. With this in
+        # mind, we start by decrementing the stack pointer, save the first 
+        # argument into the D register, and decrement the A register so that
+        # the second argument is in the M register.
+        else:
+            self.outfile.write(dedent('''\
+                    @SP
+                    AM=M-1
                     D=M
-                    AM=A-1
+                    A=A-1
                 '''))
         asm_cmd: str
         match vm_command:
@@ -298,11 +306,6 @@ class CodeWriter:
             case "not":
                 asm_cmd = 'M=!M\n'
         self.outfile.write(asm_cmd)
-        # Increment stack pointer.
-        self.outfile.write(dedent('''\
-                @SP
-                M=M+1
-            '''))
     
     def write_push_pop(self, command_type: Command, 
                        segment: str, 
