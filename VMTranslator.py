@@ -356,42 +356,50 @@ class CodeWriter:
             symbol = f"{Path(self.outfile.name).stem}.{index}"
         
         if command_type == Command.PUSH:
-            target: str # Where to store what we get after the A-instruction
-
-            # If segment is constant, think of the A-register as storing a 
-            # value, and we that value to the D-register
+            target: str = 'M'
             if segment == "constant":
                 symbol = index
                 target = 'A'
-            # Otherwise, think of the A-register as storing an address, and
-            # store the value at that address in the D-register
-            else:
-                target = 'M'
-
-            # Access address of base segment
+            # Access address of segment
             self.outfile.write(f"@{symbol}\n")
 
+            # If the segment is not among the "simple" addresses that don't 
+            # have a "base" address, handle it as follows
             if segment not in {"pointer", "constant", "static"}:
-                # For segments for which the index gives us trouble: If the 
-                # index is greater than 0, save the base pointer to the 
-                # D-register, and get to the address by setting the A-register
-                # to the index and adding the base address to it
+                # If the index is greater than 0, proceed in the 
+                # usual way by saving the value at the base pointer pointer 
+                # to the D register, and get to the address by setting the A
+                # register to the index and adding the base address to it.
                 if index > 0:
                     self.outfile.write(dedent('''\
-                            D=M
+                            D={REGISTER}
                             @{INDEX}
                             A=D+A
-                        ''').format(INDEX=index))
-                # For otherwise trivial segments, simply set the A-register to 
-                # the address at the base pointer
-                else:
+                        ''').format(INDEX=index,
+                                    REGISTER='A' if segment == "temp" 
+                                                 else 'M'))
+                # Otherwise, when the index is 0, simply set the A register to
+                # the address that the base address points at. We don't do
+                # this with the temp segment since the value at R5 is not a 
+                # base pointer, but we do handle it similarly in the previous
+                # block of code because it have the same indexing property as
+                # the segments that work with base pointers.
+                elif segment != "temp":
                     self.outfile.write("A=M\n")
         
-            # Save the value at the address to the D-register
+            # In all other cases, we can simply access the value either in the
+            # A register or the address that the A register points to without
+            # any issues.
+
+            # If we are pushing a constant value, we give the D register the 
+            # value of the constant which is the value of the A register 
+            # itself. In all other cases, we are pushing the value at the 
+            # address stored in the A register, so we access the M register 
+            # accordingly.
             self.outfile.write(f"D={target}\n")
 
             # Access the top of the stack and set its value to the D-register,
-            # then increment the stack pointer
+            # then increment the stack pointer.
             self.outfile.write(dedent('''\
                     @SP
                     A=M
@@ -407,16 +415,18 @@ class CodeWriter:
                     @SP
                     AM=M-1
                     D=M
-                '''))
-            
+                    @{SYMBOL}
+                ''').format(SYMBOL=symbol))
+
             # In these simple cases, we simply take the value in the 
             # D-register and store it in the desired address, without much
             # issue.
-            if segment in {"pointer", "static"} or index == 0:
-                self.outfile.write(dedent('''\
-                        @{SYMBOL}
-                        M=D
-                    ''').format(SYMBOL=symbol))
+            if segment in {"pointer", "static"}:
+                self.outfile.write("M=D\n")
+            elif index == 0:
+                if segment != "temp":
+                    self.outfile.write(f"A=M\n")
+                self.outfile.write(f"M=D\n")
             # Outside of these cases, the implementation becomes more complex.
             # You are led to believe that the implemenation requires accessing
             # a temporary variable; however, this is not necessary. Credit to
@@ -427,15 +437,20 @@ class CodeWriter:
             # functionality should remain.
             else:
                 self.outfile.write(dedent('''\
-                        @{SYMBOL}
-                        D=D+M
+                        D=D+{REGISTER}
                         @{INDEX}
                         D=D+A
                         @SP
                         A=M
                         A=D-M
                         M=D-A
-                    ''').format(SYMBOL=symbol, INDEX=index))
+                    ''').format(SYMBOL=symbol, 
+                                INDEX=index,
+                                REGISTER='A' if segment == "temp" else 'M'))
+                                # ^ We do this because if we access M when 
+                                # using the temp segment, we access the value
+                                # at RAM[5] rather than the address 5, which
+                                # is what we want.
 
     def write_end(self) -> None:
         """Write end-of-file loop to filename.asm."""
