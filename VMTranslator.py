@@ -399,13 +399,14 @@ class CodeWriter:
             self.outfile.write(f"D={target}\n")
 
             # Access the top of the stack and set its value to the D-register,
-            # then increment the stack pointer.
+            # then increment the stack pointer. To reduce the line count, we
+            # increment the stack pointer first and then set the value below
+            # it accordinly.
             self.outfile.write(dedent('''\
                     @SP
-                    A=M
-                    M=D
-                    @SP
                     M=M+1
+                    A=M-1
+                    M=D
                 '''))
 
         elif command_type == Command.POP:
