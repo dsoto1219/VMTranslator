@@ -43,7 +43,7 @@ class Parser:
         Should not be called if the current command is Command.RETURN.
         """
         if self.command_type == Command.RETURN:
-            raise ValueError("arg1 should not be assigned if command type "
+            raise ValueError("arg1 should not be accessed if command type "
                               "is RETURN")
         return self._arg1
     
@@ -160,7 +160,7 @@ class Parser:
                 raise ParserError(self, "pop not defined when segment is "
                                         "constant")
             if self.arg1 == "static" and self.arg2 > 239:
-                raise ParserError(self, "segment index can only be between 0 "
+                raise ParserError(self, "static index can only be between 0 "
                                         "and 239, inclusive")
         # Last case: All whitespace or comment
         elif matches := re.fullmatch(
