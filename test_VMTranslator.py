@@ -1,5 +1,5 @@
 """Parser tests."""
-import VMTranslator as vmt
+import constants, VMTranslator as vmt
 from constants import Command
 import pytest
 
