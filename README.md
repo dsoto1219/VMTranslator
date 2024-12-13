@@ -6,5 +6,5 @@ There are two relevant files for users: `VMTranslator.py` and `translate.bat`. `
 
 ## Sources
 
-    1. Nisan, N., & Schocken, S. (2021). *The Elements of Computing Systems: Building a Modern Computer from First Principles (2nd ed.).* The MIT Press.
-    2. [Nand2Tetris Part 2 on Coursera](https://www.coursera.org/learn/nand2tetris2)
+1. Nisan, N., & Schocken, S. (2021). *The Elements of Computing Systems: Building a Modern Computer from First Principles (2nd ed.).* The MIT Press.
+2. [Nand2Tetris Part 2 on Coursera](https://www.coursera.org/learn/nand2tetris2)
