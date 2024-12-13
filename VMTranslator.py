@@ -49,9 +49,6 @@ class Parser:
     
     @arg1.setter
     def arg1(self, value: str) -> None:
-        if self.command_type == Command.RETURN:
-            raise ValueError("arg1 should not be assigned if command type "
-                              "is RETURN")
         self._arg1 = value
 
     @property
@@ -74,16 +71,6 @@ class Parser:
     
     @arg2.setter
     def arg2(self, value: int) -> None:
-        if self.command_type not in {
-                Command.PUSH,
-                Command.POP,
-                Command.FUNCTION,
-                Command.CALL,
-            }:
-            raise ParserError(self, 
-                              "arg2 should only be assigned if command type "
-                              "is PUSH, POP, FUNCTION, or CALL, not "
-                             f"{self.command_type}")
         self._arg2 = value
 
     def _parse_line(self) -> None:
