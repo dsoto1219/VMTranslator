@@ -551,10 +551,10 @@ def main():
         files = [file]
     
     with open(f"{filename}.asm", "w") as out_f:
+        writer = CodeWriter(out_f, args.no_comments)
         for file in files:
             with open(file) as in_f:
                 parser = Parser(in_f)
-                writer = CodeWriter(out_f, args.no_comments)
                 while parser.has_more_lines():
                     parser.advance()
                     match parser.command_type:
