@@ -575,6 +575,19 @@ def main():
                             writer.write_if(parser.arg1)
         writer.write_end()
 
+    with open(f"{filename}.asm", "r+") as indented_outfile:
+        # Indent all lines in the outfile except for label lines (those that 
+        # start with an opening parenthesis, '(').
+        # from https://stackoverflow.com/a/15976014/18031673
+        # Unfortunately, it seems that I have to do this and not 
+        # `for line in indented_outfile`
+        lines = indented_outfile.readlines() 
+        indented_outfile.seek(0)
+        for i in range(len(lines)):
+            if not lines[i].lstrip().startswith('('):
+                lines[i] = "    " + lines[i]
+            indented_outfile.write(lines[i])
+        indented_outfile.truncate()
 
 if __name__ == "__main__":
     main()
