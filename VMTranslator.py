@@ -104,7 +104,7 @@ class Parser:
         elif matches := re.fullmatch(
                 pattern=r'''
                 ^\s*                             # Optional whitespace
-                (?P<cmd>{memory_access_cmds})\s+ # Valid memory access command
+                (?P<cmd>{memory_access_cmds})\s+ # Valid access command
                 (?P<segment>{valid_segments})\s+ # Valid virtual memory segment
                 (?P<index>\d+)                   # Any non-negative integer
                 \s*(?://.*)?$                    # Optional whitespace+comment
