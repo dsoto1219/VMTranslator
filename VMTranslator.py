@@ -1,7 +1,7 @@
 import argparse
 import constants
 from constants import Command, REGEXES
-import os.path
+import os
 from pathlib import Path
 import re
 from textwrap import dedent
@@ -451,31 +451,56 @@ class CodeWriter:
 def main():
     argparser = argparse.ArgumentParser(
         prog='VMTranslator',
-        description="Takes in .vm files as input and outputs its "
-                    "corresponding HACK Assembly file, ending in .asm",
-        epilog=".asm files are saved to the same directory in which the .vm "
-               "file was in")
-    argparser.add_argument('infile')
+        description="Takes in either .vm files or a directory containing .vm "
+                    " files as input and outputs the corresponding HACK "
+                    "Assembly file, ending in .asm",
+        epilog="If .vm file(s) supplied, the .asm file is saved in the same " 
+               "directory as where the .vm file(s) originated. If a directory "
+               "is supplied, the .asm file is saved in that directory.")
+    argparser.add_argument('files')
     argparser.add_argument('-nc', '--no-comments', action='store_true')
     args = argparser.parse_args()
 
-    filename, ext = os.path.splitext(args.infile)
-    if ext != ".vm":
-        raise AttributeError(f"File {args.infile} does have a .vm extension!")
-
-    with open(args.infile) as in_f, open(f"{filename}.asm", "w") as out_f:
-        parser = Parser(in_f)
-        writer = CodeWriter(out_f, args.no_comments)
-        while parser.has_more_lines():
-            parser.advance()
-            match parser.command_type:
-                case Command.ARITHMETIC:
-                    writer.write_arithmetic(parser.arg1)
-                case Command.PUSH|Command.POP:
-                    writer.write_push_pop(
-                        parser.command_type,
-                        parser.arg1,
-                        parser.arg2)
+    # If the given file is a directory, run the program on all .vm files in
+    # that directory
+    files: list
+    filename: str # filename.asm
+    if os.path.isdir(args.files):
+        directory = args.files
+        files = []
+        for f in os.listdir(directory):
+            if Path(f).suffix == ".vm":
+                files.append(os.path.join(directory, f))
+        filename = directory
+        if not files: 
+            raise FileNotFoundError(f"No files with .vm extension in"
+                                    f"{args.files}")
+    # Otherwise, make sure the file is a .vm file
+    else: 
+        file = args.files
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"File {file} does not exist")
+        filename, ext = os.path.splitext(file)
+        if ext != ".vm":
+            raise NameError(f"All files must have a .vm extension,"
+                            f"{file} does not")
+        files = [file]
+    
+    with open(f"{filename}.asm", "w") as out_f:
+        for file in files:
+            with open(file) as in_f:
+                parser = Parser(in_f)
+                writer = CodeWriter(out_f, args.no_comments)
+                while parser.has_more_lines():
+                    parser.advance()
+                    match parser.command_type:
+                        case Command.ARITHMETIC:
+                            writer.write_arithmetic(parser.arg1)
+                        case Command.PUSH|Command.POP:
+                            writer.write_push_pop(
+                                parser.command_type,
+                                parser.arg1,
+                                parser.arg2)
         writer.write_end()
 
 
