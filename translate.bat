@@ -33,6 +33,10 @@ rem Loop over all files and translate them
 for /r %%f in (*.vm) do (
     echo Processing %%f
     python %vm_translator_path% %%f
+    if errorlevel 1 (
+        echo Python script threw error, stopping script execution.
+        exit /b
+    )
 )
 
 echo All .vm files have been translated.
