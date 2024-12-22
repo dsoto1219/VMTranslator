@@ -509,8 +509,8 @@ class CodeWriter:
         """Write end-of-file loop to filename.asm."""
         self.outfile.write(dedent('''
                 (END)
-                    @END
-                    0;JMP'''))
+                @END
+                0;JMP'''))
 
 
 def main():
