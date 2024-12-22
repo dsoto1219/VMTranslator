@@ -175,7 +175,7 @@ class Parser:
             label = mgd['label']
             if label[0].isdigit():
                 raise ParserError("Label's first char cannot be a digit.")
-            self.arg1 = mgd['label']
+            self.arg1 = label
         # Last case: All whitespace or comment
         elif matches := re.fullmatch(
                 pattern=r"^\s*(?://.*)?$", 
