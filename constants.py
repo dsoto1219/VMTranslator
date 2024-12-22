@@ -88,7 +88,7 @@ REGEXES: dict = {
         'arithmetic': 'add|sub|neg|eq|gt|lt|and|or|not',
         'memory_access': 'push|pop',
         'branching': 'label|goto|if-goto',
-        'function': 'function|return|call'
+        'function': 'function|call'
     },
     'segment' : 'argument|local|static|constant|this|that|pointer|temp'
 }
