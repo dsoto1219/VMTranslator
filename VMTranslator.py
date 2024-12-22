@@ -244,7 +244,7 @@ class CodeWriter:
                     M=D
                 ''')
         self.outfile.write(self._SP_INIT)
-        # This dictionary is for the `write_arithmetic`` method. Its comparison
+        # This dictionary is for the `write_arithmetic` method. Its comparison
         # commands require labels in order to work---to avoid creating multiple
         # labels of the same name, we number the labels starting from 1, and
         # increment their numbers after printing them.
