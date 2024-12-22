@@ -106,8 +106,8 @@ class Parser:
                 ^\s*                             # Optional whitespace
                 (?P<cmd>{memory_access_cmds})\s+ # Valid access command
                 (?P<segment>{valid_segments})\s+ # Valid virtual memory segment
-                (?P<index>\d+)                   # Any non-negative integer
-                \s*(?://.*)?$                    # Optional whitespace+comment
+                (?P<index>\d+)\s*                # Any non-negative integer
+                (?://.*)?$                       # Optional whitespace+comment
                 '''.format(
                     memory_access_cmds=REGEXES['command']['memory_access'],
                     valid_segments=REGEXES['segment']),
