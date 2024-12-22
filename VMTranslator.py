@@ -472,9 +472,11 @@ class CodeWriter:
         Writes to the output file the assembly code that implements the given
         `label` command. 
         """
+        self.outfile.write(f"({label})")
         if not self.comments_off:
-            self.outfile.write(f"// label {label}\n")
-        self.outfile.write(f"({label})\n")
+            self.outfile.write(f" // label {label}\n")
+        else:
+            self.outfile.write('\n')
     
     def write_goto(self, label: str) -> None:
         """
