@@ -78,7 +78,8 @@ class Parser:
         Parses current line of vm code with regex, with the following possible
         valid formats:
             1. [arithmetic command]
-            2. [push/pop] [segment] [index]
+            2. [push/pop command] [segment] [index]
+            3. [branching command] [label]
         And saves results into command_type, arg1, and arg2, accordingly.
         The current line is considered valid if it can either be parsed into
         this form or if it is a comment or whitespace. If line is not valid, 
@@ -149,6 +150,32 @@ class Parser:
             if self.arg1 == "static" and self.arg2 > 239:
                 raise ParserError(self, "static index can only be between 0 "
                                         "and 239, inclusive")
+        # Case 3: Branching command (label, goto, if-goto)
+        elif matches := re.fullmatch(
+                pattern=r'''
+                ^\s*                         # Optional preceding whitespace
+                (?P<cmd>{branching_cmds})\s+ # Valid branching command
+                (?P<label>[\w\.:]+)\s*       # Label name (p. 217)
+                (?://.*)?$                   # Optional comment
+                '''.format(branching_cmds=REGEXES['command']['branching']),
+                string=self.current_line,
+                flags=re.X):
+            mgd = matches.groupdict()
+            match mgd['cmd']:
+                case "label":
+                    self.command_type = Command.LABEL
+                case "goto":
+                    self.command_type = Command.GOTO
+                case "if-goto":
+                    self.command_type = Command.IF
+                case _: # Incorrect parse
+                    raise ParserError(self, f"Regex incorrectly matched "
+                                      f"{mgd['cmd']} as a branching command "
+                                       "(Error in Parser implementation).")
+            label = mgd['label']
+            if label[0].isdigit():
+                raise ParserError("Label's first char cannot be a digit.")
+            self.arg1 = mgd['label']
         # Last case: All whitespace or comment
         elif matches := re.fullmatch(
                 pattern=r"^\s*(?://.*)?$", 
@@ -439,6 +466,42 @@ class CodeWriter:
                                 # using the temp segment, we access the value
                                 # at RAM[5] rather than the address 5, which
                                 # is what we want.
+    
+    def write_label(self, label: str) -> None:
+        """
+        Writes to the output file the assembly code that implements the given
+        `label` command. 
+        """
+        if not self.comments_off:
+            self.outfile.write(f"// label {label}\n")
+        self.outfile.write(f"({label})\n")
+    
+    def write_goto(self, label: str) -> None:
+        """
+        Writes to the output file the assembly code that implements the given
+        `goto` command. 
+        """
+        if not self.comments_off:
+            self.outfile.write(f"// goto {label}\n")
+        self.outfile.write(dedent('''\
+                @{label}
+                0;JMP
+        ''').format(label=label))
+
+    def write_if(self, label: str) -> None:
+        """
+        Writes to the output file the assembly code that implements the given
+        `if-goto` command.
+        """
+        if not self.comments_off:
+            self.outfile.write(f"// if-goto {label}\n")
+        self.outfile.write(dedent('''\
+                @SP
+                AM=M-1
+                D=M
+                @{label}
+                D;JNE
+        ''').format(label=label))
 
     def write_end(self) -> None:
         """Write end-of-file loop to filename.asm."""
@@ -502,6 +565,12 @@ def main():
                                 parser.command_type,
                                 parser.arg1,
                                 parser.arg2)
+                        case Command.LABEL:
+                            writer.write_label(parser.arg1)
+                        case Command.GOTO:
+                            writer.write_goto(parser.arg1)
+                        case Command.IF:
+                            writer.write_if(parser.arg1)
         writer.write_end()
 
 
