@@ -185,7 +185,7 @@ class Parser:
             # full contents of current line
             self.arg1 = self.current_line
         else: # Unknown error
-            raise ParserError(self, "Unforseen error.")
+            raise ParserError(self, "Could not recognize line as vm code.")
 
     def has_more_lines(self) -> bool:
         """
