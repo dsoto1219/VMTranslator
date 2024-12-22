@@ -475,7 +475,8 @@ def main():
         if not files: 
             raise FileNotFoundError(f"No files with .vm extension in"
                                     f"{args.files}")
-    # Otherwise, make sure the file is a .vm file
+    # Otherwise, make sure the file is a .vm file (with this, args.files is a 
+    # misnomer)
     else: 
         file = args.files
         if not os.path.isfile(file):
