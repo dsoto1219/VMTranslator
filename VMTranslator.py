@@ -141,7 +141,7 @@ class Parser:
             if self.arg1 == "pointer" and self.arg2 not in {0, 1}:
                 raise ParserError(self, "When segment is pointer, index "
                                         "should either be 0 or 1")
-            if self.arg1 == "temp" and (self.arg2 < 5 or self.arg2 > 12):
+            if self.arg1 == "temp" and self.arg2 > 7:
                 raise ParserError(self, "temp index must be between 5 and 12, "
                                         "inclusive")
             if self.arg1 == "constant" and self.command_type == "pop":
