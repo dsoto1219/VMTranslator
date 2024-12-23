@@ -529,14 +529,14 @@ def main():
     # If the given file is a directory, run the program on all .vm files in
     # that directory
     files: list
-    filename: str # filename.asm
+    out_filename: str # filename.asm
     if os.path.isdir(args.files):
         directory = args.files
         files = []
         for f in os.listdir(directory):
             if Path(f).suffix == ".vm":
                 files.append(os.path.join(directory, f))
-        filename = directory
+        out_filename = f"{directory}\\{os.path.basename(directory)}.asm"
         if not files: 
             raise FileNotFoundError(f"No files with .vm extension in"
                                     f"{args.files}")
@@ -550,9 +550,10 @@ def main():
         if ext != ".vm":
             raise NameError(f"All files must have a .vm extension,"
                             f"{file} does not")
+        out_filename = filename + ".asm"
         files = [file]
     
-    with open(f"{filename}.asm", "w") as out_f:
+    with open(out_filename, "w") as out_f:
         writer = CodeWriter(out_f, args.no_comments)
         for file in files:
             with open(file) as in_f:
@@ -575,7 +576,7 @@ def main():
                             writer.write_if(parser.arg1)
         writer.write_end()
 
-    with open(f"{filename}.asm", "r+") as indented_outfile:
+    with open(out_filename, "r+") as indented_outfile:
         # Indent all lines in the outfile except for label lines (those that 
         # start with an opening parenthesis, '(').
         # from https://stackoverflow.com/a/15976014/18031673
