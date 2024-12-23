@@ -585,9 +585,14 @@ def main():
         lines = indented_outfile.readlines() 
         indented_outfile.seek(0)
         for i in range(len(lines)):
+            # If not label, add indent
             if not lines[i].lstrip().startswith('('):
                 lines[i] = "    " + lines[i]
-            indented_outfile.write(lines[i])
+            # Otherwise, if comments on, make sure label's comment (the 
+            # previous line) is not indented
+            elif not args.no_comments:
+                lines[i-1] = lines[i-1].lstrip()
+        indented_outfile.writelines(lines)
         indented_outfile.truncate()
 
 if __name__ == "__main__":
