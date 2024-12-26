@@ -176,6 +176,35 @@ class Parser:
             if label[0].isdigit():
                 raise ParserError("Label's first char cannot be a digit.")
             self.arg1 = label
+        # Case 4: Function command (call, function)
+        elif matches := re.fullmatch(
+                pattern=r'''
+                ^\s*                         # Optional preceding whitespace
+                (?P<cmd>{function_cmds})\s+  # Valid function-related command
+                (?P<funcname>[\w\.:]+)\s+    # Function name
+                (?P<N>[\w]+)\s*              # nArgs or nVars
+                (?://.*)?$                   # Optional comment
+                '''.format(function_cmds=REGEXES['command']['function']),
+                string=self.current_line,
+                flags=re.X):
+            mgd = matches.groupdict()
+            match mgd['cmd']:
+                case "function":
+                    self.command_type = Command.FUNCTION
+                case "call":
+                    self.command_type = Command.CALL
+                case _: # Incorrect parse
+                    raise ParserError(self, f"Regex incorrectly matched "
+                                      f"{mgd['cmd']} as a function command "
+                                       "(Error in Parser implementation).")
+            self.arg1 = mgd['funcname']
+            assert int(mgd['N']) >= 0, "nVars/nArgs cannot be negative"
+            self.arg2 = int(mgd['N'])
+        # Case 5: Return
+        elif matches := re.fullmatch(
+                pattern=r"^\s*return\s*(?://.*)?$",
+                string=self.current_line):
+            self.command_type = Command.RETURN
         # Last case: All whitespace or comment
         elif matches := re.fullmatch(
                 pattern=r"^\s*(?://.*)?$", 
@@ -244,7 +273,7 @@ class CodeWriter:
                     M=D
                 ''')
         self.outfile.write(self._SP_INIT)
-        # This dictionary is for the `write_arithmetic` method. Its comparison
+        # This dictionary is for the `write_arithmetic`, `call`, `return` methods. Its comparison
         # commands require labels in order to work---to avoid creating multiple
         # labels of the same name, we number the labels starting from 1, and
         # increment their numbers after printing them.
@@ -252,6 +281,7 @@ class CodeWriter:
             "eq" : 1,
             "gt" : 1,
             "lt" : 1,
+            "ret" : 0,
         }
 
     def write_arithmetic(self, vm_command: str) -> None:
@@ -505,6 +535,132 @@ class CodeWriter:
                 D;JNE
         ''').format(label=label))
 
+    def write_function(self, function_name: str, n_vars: int) -> None:
+        """
+        Writes to the output file the assembly code that implements the given
+        `function` command.
+        """
+        self.outfile.write('\n') # Separate functions with an extra newline
+
+        if not self.comments_off:
+            self.outfile.write(f"// function {function_name} {n_vars}\n")
+
+        # Declare label for function entry
+        self.outfile.write(f"({function_name})\n")
+        # Push nVars zeros to the global stack
+        for _ in range(n_vars):
+            self.outfile.write(dedent('''\
+                    @SP
+                    M=M+1
+                    A=M-1
+                    M=0
+                '''))
+
+    def write_call(self, function_name: str, n_args: int) -> None:
+        """
+        Writes to the output file the assembly code that implements the given
+        `call` command.
+        """
+        if not self.comments_off:
+            self.outfile.write(f"// call {function_name} {n_args}\n")
+        # Push return address (created later)
+        self.outfile.write(dedent('''\
+                @{funcname}$ret{ret_cnt}
+                D=A
+                @SP
+                M=M+1
+                A=M-1
+                M=D
+        ''').format(
+            funcname=function_name,
+            label=self.label_cnts['ret']))
+        # Push all base addresses to save them
+        for base_adr in ["LCL", "ARG", "THIS", "THAT"]:
+            self.outfile.write(dedent('''\
+                @{base_adr}
+                D=M
+                @SP
+                M=M+1
+                A=M-1
+                M=D
+            ''').format(base_adr=base_adr))
+        # LCL = SP
+        self.outfile.write(dedent('''\
+                @SP
+                D=M
+                @LCL
+                M=D
+            '''))
+        # ARG = SP - 5 - nArgs 
+        self.outfile.write(dedent('''\
+                @5
+                D=D-A
+                @{n_args}
+                D=D-A
+                @ARG
+                M=D
+        ''').format(n_args=n_args))
+        # Create return address
+        self.outfile.write(f"({function_name}$ret{self.label_cnts['ret']})")
+        self.label_cnts['ret'] += 1
+    
+    def write_return(self) -> None:
+        """
+        Writes assembly code that implements the `return` command.
+        """
+        if not self.comments_off:
+            self.outfile.write(f"// return\n")
+        
+        # endFrame = LCL // temporary variable (saved at R14)
+        self.outfile.write(dedent('''\
+                @LCL
+                D=M
+                @R14
+                M=D
+            '''))
+        # retAddr = *(endFrame - 5) // gets the return address (save to R15)
+        self.outfile.write(dedent('''\
+                @5
+                A=D-A
+                D=M
+                @R15
+                M=D
+            '''))
+        # *ARG = pop()
+        self.outfile.write(dedent('''\
+                @SP
+                A=M-1
+                D=M
+                @ARG
+                A=M
+                M=D
+            '''))
+        # SP = ARG + 1
+        self.outfile.write(dedent('''\
+                @ARG
+                D=M+1
+                @SP
+                M=D
+            '''))
+        # BASE_ADR = *(endFrame - OFFSET) // Restores caller's BASE_ADR
+        for base_adr, offset in zip(["THAT", "THIS", "ARG", "LCL"], 
+                                    range(1, 4 + 1)):
+            self.outfile.write(dedent('''\
+                    @R14
+                    D=M
+                    @{offset}
+                    A=D-A
+                    D=M
+                    @{base_adr}
+                    M=D
+                ''').format(base_adr=base_adr, offset=offset))
+        # goto retAddr
+        self.outfile.write(dedent('''\
+                @R15
+                A=M
+                0;JMP
+            ''').format(base_adr=base_adr, offset=offset))
+        
     def write_end(self) -> None:
         """Write end-of-file loop to filename.asm."""
         self.outfile.write(dedent('''
@@ -574,6 +730,12 @@ def main():
                             writer.write_goto(parser.arg1)
                         case Command.IF:
                             writer.write_if(parser.arg1)
+                        case Command.FUNCTION:
+                            writer.write_function(parser.arg1, parser.arg2)
+                        case Command.GOTO:
+                            writer.write_call(parser.arg1, parser.arg2)
+                        case Command.RETURN:
+                            writer.write_return()
         writer.write_end()
 
     with open(out_filename, "r+") as indented_outfile:
