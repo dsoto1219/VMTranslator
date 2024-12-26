@@ -730,8 +730,8 @@ def main():
         lines = indented_outfile.readlines() 
         indented_outfile.seek(0)
         for i in range(len(lines)):
-            # If not label, add indent
-            if not lines[i].lstrip().startswith('('):
+            # If not non-return label, add indent
+            if not lines[i].lstrip().startswith('(') or '$' in lines[i]:
                 lines[i] = "    " + lines[i]
             # Otherwise, if comments on, make sure label's comment (the 
             # previous line) is not indented
