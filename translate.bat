@@ -29,14 +29,18 @@ set "vm_translator_path=%cd%\VMTranslator.py"
 rem Go to the specified directory
 cd /d "%~1"
 
-rem Loop over all files and translate them
-for /r %%f in (*.vm) do (
-    echo Processing %%f
-    python %vm_translator_path% %%f
-    if errorlevel 1 (
-        echo Python script threw error, stopping script execution.
-        exit /b
+rem Iterate through all subdirectories
+for /r /d %%d in (*) do (
+    rem Check if the subdirectory contains any .vm files
+    pushd "%%d"
+    if exist "*.vm" (
+        echo Found .vm file in %%d
+        python "%vm_translator_path%" "%%d"
+        if errorlevel 1 (
+            exit /b
+        )
+    ) else (
+        echo No .vm files found in %%d, skipping...
     )
+    popd
 )
-
-echo All .vm files have been translated.
