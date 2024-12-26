@@ -266,13 +266,6 @@ class CodeWriter:
         self.comments_off = comments_off 
         # Initialize stack to start at RAM address 256 
         # (Nisan & Schocken, 2021, p. 188):
-        self._SP_INIT = dedent('''\
-                    @256
-                    D=A
-                    @SP
-                    M=D
-                ''')
-        self.outfile.write(self._SP_INIT)
         # This dictionary is for the `write_arithmetic`, `call`, `return` methods. Its comparison
         # commands require labels in order to work---to avoid creating multiple
         # labels of the same name, we number the labels starting from 1, and
@@ -658,14 +651,6 @@ class CodeWriter:
                 A=M
                 0;JMP
             ''').format(base_adr=base_adr, offset=offset))
-        
-    def write_end(self) -> None:
-        """Write end-of-file loop to filename.asm."""
-        self.outfile.write(dedent('''
-                // EOF Loop
-                (END)
-                @END
-                0;JMP'''))
 
 
 def main():
@@ -735,7 +720,6 @@ def main():
                             writer.write_call(parser.arg1, parser.arg2)
                         case Command.RETURN:
                             writer.write_return()
-        writer.write_end()
 
     with open(out_filename, "r+") as indented_outfile:
         # Indent all lines in the outfile except for label lines (those that 
