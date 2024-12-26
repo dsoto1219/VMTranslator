@@ -662,6 +662,7 @@ class CodeWriter:
     def write_end(self) -> None:
         """Write end-of-file loop to filename.asm."""
         self.outfile.write(dedent('''
+                // EOF Loop
                 (END)
                 @END
                 0;JMP'''))
