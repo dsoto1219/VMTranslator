@@ -562,7 +562,7 @@ class CodeWriter:
                 M=D
         ''').format(
             funcname=function_name,
-            label=self.label_cnts['ret']))
+            ret_cnt=self.label_cnts['ret']))
         # Push all base addresses to save them
         for base_adr in ["LCL", "ARG", "THIS", "THAT"]:
             self.outfile.write(dedent('''\
@@ -589,8 +589,12 @@ class CodeWriter:
                 @ARG
                 M=D
         ''').format(n_args=n_args))
+        self.outfile.write(dedent('''\
+                @{function_name}
+                0;JMP
+        ''').format(function_name=function_name))
         # Create return address
-        self.outfile.write(f"({function_name}$ret{self.label_cnts['ret']})")
+        self.outfile.write(f"({function_name}$ret{self.label_cnts['ret']})\n")
         self.label_cnts['ret'] += 1
     
     def write_return(self) -> None:
@@ -714,7 +718,7 @@ def main():
                             writer.write_if(parser.arg1)
                         case Command.FUNCTION:
                             writer.write_function(parser.arg1, parser.arg2)
-                        case Command.GOTO:
+                        case Command.CALL:
                             writer.write_call(parser.arg1, parser.arg2)
                         case Command.RETURN:
                             writer.write_return()
