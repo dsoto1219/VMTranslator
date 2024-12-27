@@ -379,7 +379,7 @@ class CodeWriter:
             self.outfile.write(f"// {command} {segment} {index}\n")
 
         # The value for the A-instruction that we use to get the address of
-        # the desired segment
+        # the desired segment, i.e. with @{symbol}
         symbol: str | dict = constants.SEGMENT_SYMBOLS[segment]
         if segment == "pointer":
             try:
