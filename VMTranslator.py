@@ -264,8 +264,6 @@ class CodeWriter:
         # If True, prints a comment above each sequence of asm commands
         # that tells you which vm code command it is executing.
         self.comments_off = comments_off 
-        # Initialize stack to start at RAM address 256 
-        # (Nisan & Schocken, 2021, p. 188):
         # This dictionary is for the `write_arithmetic`, `call`, `return` methods. Its comparison
         # commands require labels in order to work---to avoid creating multiple
         # labels of the same name, we number the labels starting from 1, and
