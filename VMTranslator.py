@@ -331,14 +331,14 @@ class CodeWriter:
             case "eq"|"gt"|"lt":
                 asm_cmd = dedent('''\
                     D=M-D
-                    @.{CMD}.{N}
+                    @{CMD}:{N}
                     D;J{CMD}
                     D=0
-                    @.END_{CMD}.{N}
+                    @END_{CMD}:{N}
                     0;JMP
-                    (.{CMD}.{N})
+                    ({CMD}:{N})
                         D=-1
-                    (.END_{CMD}.{N})
+                    (END_{CMD}:{N})
                         @SP
                         A=M-1
                         M=D
