@@ -337,11 +337,11 @@ class CodeWriter:
                     @END_{CMD}:{N}
                     0;JMP
                     ({CMD}:{N})
-                        D=-1
+                    D=-1
                     (END_{CMD}:{N})
-                        @SP
-                        A=M-1
-                        M=D
+                    @SP
+                    A=M-1
+                    M=D
                 ''').format(CMD=vm_command.upper(), 
                             N=self.label_cnts[vm_command])
                 self.label_cnts[vm_command] += 1
