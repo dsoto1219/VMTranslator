@@ -266,10 +266,11 @@ class CodeWriter:
         # If True, prints a comment above each sequence of asm commands
         # that tells you which vm code command it is executing.
         self.comments_off = comments_off 
-        # This dictionary is for the `write_arithmetic`, `call`, `return` methods. Its comparison
-        # commands require labels in order to work---to avoid creating multiple
-        # labels of the same name, we number the labels starting from 1, and
-        # increment their numbers after printing them.
+        # This dictionary is for the `write_arithmetic`, `call`, `return` 
+        # methods. Its comparison commands require labels in order to work---to
+        #  avoid creating multiple labels of the same name, we number the 
+        # labels starting from 1, and increment their numbers after printing 
+        # them.
         self.label_cnts: dict[str, int] = {
             "eq" : 0,
             "gt" : 0,
