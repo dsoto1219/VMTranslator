@@ -270,9 +270,9 @@ class CodeWriter:
         # labels of the same name, we number the labels starting from 1, and
         # increment their numbers after printing them.
         self.label_cnts: dict[str, int] = {
-            "eq" : 1,
-            "gt" : 1,
-            "lt" : 1,
+            "eq" : 0,
+            "gt" : 0,
+            "lt" : 0,
             "ret" : defaultdict(int)
         }
         # Bootstrap: Set SP = 256
