@@ -1,5 +1,6 @@
 import argparse
 import constants
+from collections import defaultdict
 from constants import Command, REGEXES
 import os
 from pathlib import Path
@@ -272,7 +273,7 @@ class CodeWriter:
             "eq" : 1,
             "gt" : 1,
             "lt" : 1,
-            "ret" : 0,
+            "ret" : defaultdict(int)
         }
         # Bootstrap: Set SP = 256
         if not self.comments_off:
@@ -573,7 +574,7 @@ class CodeWriter:
                 M=D
         ''').format(
             funcname=function_name,
-            ret_cnt=self.label_cnts['ret']))
+            ret_cnt=self.label_cnts['ret'][function_name]))
         # Push all base addresses to save them
         for base_adr in ["LCL", "ARG", "THIS", "THAT"]:
             self.outfile.write(dedent('''\
@@ -605,8 +606,10 @@ class CodeWriter:
                 0;JMP
         ''').format(function_name=function_name))
         # Create return address
-        self.outfile.write(f"({function_name}$ret{self.label_cnts['ret']})\n")
-        self.label_cnts['ret'] += 1
+        self.outfile.write(
+            f"({function_name}$ret{self.label_cnts['ret'][function_name]})\n"
+        )
+        self.label_cnts['ret'][function_name] += 1
     
     def write_return(self) -> None:
         """
