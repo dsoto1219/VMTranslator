@@ -696,11 +696,6 @@ def main():
         if not files: 
             raise FileNotFoundError(f"No files with .vm extension in"
                                     f"{args.files}")
-        # Ensure Sys.vm is processed first, so Sys.init is the first function
-        # in the .asm file
-        if os.path.join(directory, 'Sys.vm') in files:
-            files.remove(os.path.join(directory, 'Sys.vm'))
-            files.insert(0, os.path.join(directory, 'Sys.vm'))
     # Otherwise, make sure the file is a .vm file (with this, args.files is a 
     # misnomer)
     else: 
