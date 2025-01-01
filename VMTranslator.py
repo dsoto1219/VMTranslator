@@ -392,8 +392,9 @@ class CodeWriter:
                     command = "pop"
             self.outfile.write(f"// {command} {segment} {index}\n")
 
-        # The value for the A-instruction that we use to get the address of
-        # the desired segment, i.e. with @{symbol}
+        # In both the push and pop commands, `symbol` is the value given to the
+        #  A-instruction, i.e. with @{symbol}, that we use to get the address 
+        # of the desired segment
         symbol: str | dict = constants.SEGMENT_SYMBOLS[segment]
         if segment == "pointer":
             try:
@@ -402,18 +403,22 @@ class CodeWriter:
                 raise ValueError("Indices for pointer segments can "
                                     "only be 0 or 1")
         elif segment == "static":
+            # "My static segment has been set to the static segment of the VM
+            # file to which I belong..." (Nisan & Schocken, 2021, p. 223)
             symbol = f"{Path(self.current_file_name).stem}.{index}"
         
         if command_type == Command.PUSH:
+            # In all cases except for the constant segment, we need to access
+            # the address stored in the base segment with the M register. 
+            # We use the `target` variable to handle these cases.
             target: str = 'M'
             if segment == "constant":
                 symbol = index
                 target = 'A'
-            # Access address of segment
+            # Access address of segment (with `symbol`, as described earlier)
             self.outfile.write(f"@{symbol}\n")
-
-            # If the segment is not among the "simple" addresses that don't 
-            # have a "base" address, handle it as follows
+            # After this A-instruction, handle the segments that aren't local
+            # or argument, i.e. that don't have an easy base address, like this
             if segment not in {"pointer", "constant", "static"}:
                 # If the index is greater than 0, proceed in the 
                 # usual way by saving the value at the base pointer pointer 
@@ -435,18 +440,7 @@ class CodeWriter:
                 # the segments that work with base pointers.
                 elif segment != "temp":
                     self.outfile.write("A=M\n")
-        
-            # In all other cases, we can simply access the value either in the
-            # A register or the address that the A register points to without
-            # any issues.
-
-            # If we are pushing a constant value, we give the D register the 
-            # value of the constant which is the value of the A register 
-            # itself. In all other cases, we are pushing the value at the 
-            # address stored in the A register, so we access the M register 
-            # accordingly.
             self.outfile.write(f"D={target}\n")
-
             # Access the top of the stack and set its value to the D-register,
             # then increment the stack pointer. To reduce the line count, we
             # increment the stack pointer first and then set the value below
@@ -499,8 +493,8 @@ class CodeWriter:
                                 REGISTER='A' if segment == "temp" else 'M'))
                                 # ^ We do this because if we access M when 
                                 # using the temp segment, we access the value
-                                # at RAM[5] rather than the address 5, which
-                                # is what we want.
+                                # at RAM[5] + index rather than the address 
+                                # 5 + index that we want.
     
     def write_label(self, label: str) -> None:
         """
