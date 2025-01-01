@@ -274,6 +274,17 @@ class CodeWriter:
             "lt" : 1,
             "ret" : 0,
         }
+        # Bootstrap: Set SP = 256
+        if not self.comments_off:
+            self.outfile.write("// Bootstrap\n")
+            self.outfile.write("// SP = 256\n")
+        self.outfile.write(dedent('''\
+                @256
+                D=A
+                @SP
+                M=D
+            '''))
+        # We add a call to Sys.init in main if Sys.vm exists
 
     def write_arithmetic(self, vm_command: str) -> None:
         """
@@ -702,6 +713,8 @@ def main():
     
     with open(out_filename, "w") as out_f:
         writer = CodeWriter(out_f, args.no_comments)
+        if 'Sys.vm' in [os.path.basename(f) for f in files]:
+            writer.write_call('Sys.init', 0)
         for file in files:
             with open(file) as in_f:
                 parser = Parser(in_f)
