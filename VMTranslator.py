@@ -565,6 +565,7 @@ class CodeWriter:
         """
         if not self.comments_off:
             self.outfile.write(f"// call {function_name} {n_args}\n")
+
         # Push return address (created later)
         self.outfile.write(dedent('''\
                 @{funcname}$ret{ret_cnt}
