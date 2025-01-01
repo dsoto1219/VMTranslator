@@ -260,7 +260,8 @@ class CodeWriter:
     HACK assmebly.
     """
 
-    def __init__(self, outfile: TextIO, comments_off: bool) -> None:
+    def __init__(self, outfile: TextIO, comments_off: bool, 
+                 current_file_name: str='') -> None:
         self.outfile = outfile
         # If True, prints a comment above each sequence of asm commands
         # that tells you which vm code command it is executing.
@@ -400,7 +401,7 @@ class CodeWriter:
                 raise ValueError("Indices for pointer segments can "
                                     "only be 0 or 1")
         elif segment == "static":
-            symbol = f"{Path(self.outfile.name).stem}.{index}"
+            symbol = f"{Path(self.current_file_name).stem}.{index}"
         
         if command_type == Command.PUSH:
             target: str = 'M'
@@ -714,6 +715,7 @@ def main():
         if 'Sys.vm' in [os.path.basename(f) for f in files]:
             writer.write_call('Sys.init', 0)
         for file in files:
+            writer.current_file_name = os.path.basename(file)
             with open(file) as in_f:
                 parser = Parser(in_f)
                 while parser.has_more_lines():
